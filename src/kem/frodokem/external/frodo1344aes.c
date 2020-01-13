@@ -33,6 +33,7 @@
 #define crypto_kem_keypair            OQS_KEM_frodokem_1344_aes_keypair
 #define crypto_kem_enc                OQS_KEM_frodokem_1344_aes_encaps
 #define crypto_kem_dec                OQS_KEM_frodokem_1344_aes_decaps
+#define crypto_kem_dec_measure        OQS_KEM_frodokem_1344_aes_decaps_measure
 
 #define frodo_sample_n oqs_kem_frodokem_1344_aes_sample_n
 #define frodo_pack oqs_kem_frodokem_1344_aes_pack
