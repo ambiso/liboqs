@@ -5,6 +5,7 @@
 *********************************************************************************************/
 
 #include <string.h>
+#include <x86intrin.h>
 
 int crypto_kem_keypair(unsigned char* pk, unsigned char* sk)
 { // FrodoKEM's key generation
@@ -131,10 +132,14 @@ int crypto_kem_enc(unsigned char *ct, unsigned char *ss, const unsigned char *pk
     return 0;
 }
 
-
-int crypto_kem_dec(unsigned char *ss, const unsigned char *ct, const unsigned char *sk)
-{ // FrodoKEM's key decapsulation
-    uint16_t B[PARAMS_N*PARAMS_NBAR] = {0};
+int crypto_kem_dec(unsigned char *ss, 
+                   const unsigned char *ct, 
+                   const unsigned char *sk, 
+                   uint64_t *rdtscp_start, 
+                   uint64_t *rdtscp_stop, 
+                   uint32_t *cpu_core_ident_start, 
+                   uint32_t *cpu_core_ident_stop) { // FrodoKEM's key decapsulation
+	uint16_t B[PARAMS_N*PARAMS_NBAR] = {0};
     uint16_t Bp[PARAMS_N*PARAMS_NBAR] = {0};
     uint16_t W[PARAMS_NBAR*PARAMS_NBAR] = {0};                // contains secret data
     uint16_t C[PARAMS_NBAR*PARAMS_NBAR] = {0};
@@ -204,9 +209,17 @@ int crypto_kem_dec(unsigned char *ss, const unsigned char *ct, const unsigned ch
     // Reducing BBp modulo q
     for (int i = 0; i < PARAMS_N*PARAMS_NBAR; i++) BBp[i] = BBp[i] & ((1 << PARAMS_LOGQ)-1);
 
-    // Is (Bp == BBp & C == CC) = true
-    if (memcmp(Bp, BBp, 2*PARAMS_N*PARAMS_NBAR) == 0 && memcmp(C, CC, 2*PARAMS_NBAR*PARAMS_NBAR) == 0) {
-        // Load k' to do ss = F(ct || k')
+    if (rdtscp_start != NULL)
+    {
+		*rdtscp_start = __rdtscp(cpu_core_ident_start);
+	}
+	// Is (Bp == BBp & C == CC) = true
+	int compareBpBBpCCC = memcmp(Bp, BBp, 2 * PARAMS_N * PARAMS_NBAR) == 0 && memcmp(C, CC, 2 * PARAMS_NBAR * PARAMS_NBAR) == 0;
+	if (rdtscp_stop != NULL) {
+		*rdtscp_stop = __rdtscp(cpu_core_ident_stop);
+	}
+	if (compareBpBBpCCC) {
+		// Load k' to do ss = F(ct || k')
         memcpy(Fin_k, kprime, CRYPTO_BYTES);
     } else {
         // Load s to do ss = F(ct || s)
