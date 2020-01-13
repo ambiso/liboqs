@@ -1,3 +1,4 @@
+#include <x86intrin.h>
 #include <stddef.h>
 #include <stdint.h>
 #include "params.h"
@@ -123,5 +124,62 @@ int crypto_kem_dec(uint8_t ss[KYBER_SSBYTES],
 
   /* hash concatenation of pre-k and H(c) to k */
   kdf(ss, kr, 2*KYBER_SYMBYTES);
+  return 0;
+}
+#define RDTSC(LABEL)                                                                                                   \
+    if (rdtsc_buffer != NULL) {                                                                                        \
+        *rdtsc_buffer = _rdtsc();                                                                                      \
+        *rdtsc_labels = (const unsigned char *)LABEL;                                                                  \
+        rdtsc_buffer++;                                                                                                \
+        rdtsc_labels++;                                                                                                \
+    }
+
+/*************************************************
+ * internals measured by rdtscp
+ **************************************************/
+int crypto_kem_dec_measure(uint8_t ss[KYBER_SSBYTES],
+                           const uint8_t ct[KYBER_CIPHERTEXTBYTES],
+                           const uint8_t sk[KYBER_SECRETKEYBYTES],
+                           uint64_t *rdtsc_buffer, const unsigned char **rdtsc_labels,
+                           int *fail)
+{
+  RDTSC("all");
+  size_t i;
+  uint8_t buf[2*KYBER_SYMBYTES];
+  /* Will contain key, coins */
+  uint8_t kr[2*KYBER_SYMBYTES];
+  uint8_t cmp[KYBER_CIPHERTEXTBYTES];
+  const uint8_t *pk = sk+KYBER_INDCPA_SECRETKEYBYTES;
+
+  RDTSC("indcpa_dec");
+  indcpa_dec(buf, ct, sk);
+
+  /* Multitarget countermeasure for coins + contributory KEM */
+  RDTSC("countermeasure");
+  for(i=0;i<KYBER_SYMBYTES;i++)
+    buf[KYBER_SYMBYTES+i] = sk[KYBER_SECRETKEYBYTES-2*KYBER_SYMBYTES+i];
+  RDTSC("hash_g");
+  hash_g(kr, buf, 2*KYBER_SYMBYTES);
+
+  /* coins are in kr+KYBER_SYMBYTES */
+  RDTSC("indcpa_enc");
+  indcpa_enc(cmp, buf, pk, kr+KYBER_SYMBYTES);
+
+  RDTSC("verify");
+  *fail = verify(ct, cmp, KYBER_CIPHERTEXTBYTES);
+
+  /* overwrite coins in kr with H(c) */
+  RDTSC("hash_h");
+  hash_h(kr+KYBER_SYMBYTES, ct, KYBER_CIPHERTEXTBYTES);
+
+  /* Overwrite pre-k with z on re-encryption failure */
+  RDTSC("cmov");
+  cmov(kr, sk+KYBER_SECRETKEYBYTES-KYBER_SYMBYTES, KYBER_SYMBYTES, *fail);
+
+  /* hash concatenation of pre-k and H(c) to k */
+  RDTSC("kdf");
+  kdf(ss, kr, 2*KYBER_SYMBYTES);
+
+  RDTSC("stop");
   return 0;
 }

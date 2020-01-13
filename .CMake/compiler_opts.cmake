@@ -50,6 +50,9 @@ if(CMAKE_C_COMPILER_ID MATCHES "Clang|GNU")
     endif()
 endif()
 
+# Added debug symbols (by Alexander Nilsson)
+add_compile_options(-g)
+
 if(CMAKE_C_COMPILER_ID MATCHES "Clang")
     add_compile_options(-Werror)
     add_compile_options(-Wall)

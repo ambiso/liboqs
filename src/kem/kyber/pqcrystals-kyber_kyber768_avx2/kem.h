@@ -38,4 +38,9 @@ int crypto_kem_enc(uint8_t *ct, uint8_t *ss, const uint8_t *pk);
 #define crypto_kem_dec KYBER_NAMESPACE(dec)
 int crypto_kem_dec(uint8_t *ss, const uint8_t *ct, const uint8_t *sk);
 
+#define crypto_kem_dec_measure KYBER_NAMESPACE(dec_measure)
+int crypto_kem_dec_measure(uint8_t *ss, const uint8_t *ct, const uint8_t *sk, 
+                           uint64_t *rdtsc_buffer, const unsigned char **rdtsc_labels,
+                           int *fail);
+
 #endif

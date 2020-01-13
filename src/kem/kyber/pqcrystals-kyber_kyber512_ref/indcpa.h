@@ -22,4 +22,10 @@ void indcpa_dec(uint8_t m[KYBER_INDCPA_MSGBYTES],
                 const uint8_t c[KYBER_INDCPA_BYTES],
                 const uint8_t sk[KYBER_INDCPA_SECRETKEYBYTES]);
 
+#define pack_ciphertext KYBER_NAMESPACE(pack_ciphertext)
+void pack_ciphertext(uint8_t r[KYBER_INDCPA_BYTES], polyvec *b, poly *v);
+
+#define unpack_ciphertext KYBER_NAMESPACE(unpack_ciphertext)
+void unpack_ciphertext(polyvec *b, poly *v, const uint8_t c[KYBER_INDCPA_BYTES]);
+
 #endif
