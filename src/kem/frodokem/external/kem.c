@@ -6,6 +6,7 @@
 
 #include <string.h>
 #include <x86intrin.h>
+#include <assert.h>
 
 int crypto_kem_keypair(unsigned char* pk, unsigned char* sk)
 { // FrodoKEM's key generation
@@ -343,5 +344,87 @@ int crypto_kem_dec_measure(unsigned char *ss,
     clear_bytes(G2out, 2*CRYPTO_BYTES);
     clear_bytes(Fin_k, CRYPTO_BYTES);
     clear_bytes(shake_input_seedSEprime, 1 + CRYPTO_BYTES);
+    return 0;
+}
+
+
+
+
+int crypto_kem_get_Eppp(const unsigned char *ct,
+                        const unsigned char *sk,
+                        uint16_t *out) { 
+	uint16_t B[PARAMS_N*PARAMS_NBAR] = {0};
+    uint16_t Bp[PARAMS_N*PARAMS_NBAR] = {0};
+    uint16_t W[PARAMS_NBAR*PARAMS_NBAR] = {0};
+    uint16_t W2[PARAMS_NBAR*PARAMS_NBAR] = {0};                // contains secret data
+    uint16_t C[PARAMS_NBAR*PARAMS_NBAR] = {0};
+    ALIGN_HEADER(32) uint16_t Sp[(2*PARAMS_N+PARAMS_NBAR)*PARAMS_NBAR] ALIGN_FOOTER(32) = {0};  // contains secret data
+    uint16_t *Ep = (uint16_t *)&Sp[PARAMS_N*PARAMS_NBAR];     // contains secret data
+    uint16_t *Epp = (uint16_t *)&Sp[2*PARAMS_N*PARAMS_NBAR];  // contains secret data
+    const uint8_t *ct_c1 = &ct[0];
+    const uint8_t *ct_c2 = &ct[(PARAMS_LOGQ*PARAMS_N*PARAMS_NBAR)/8];
+    const uint8_t *sk_pk = &sk[CRYPTO_BYTES];
+    const uint16_t *sk_S = (uint16_t *) &sk[CRYPTO_BYTES + CRYPTO_PUBLICKEYBYTES];
+    uint16_t S[PARAMS_N * PARAMS_NBAR];                      // contains secret data
+    const uint8_t *sk_pkh = &sk[CRYPTO_BYTES + CRYPTO_PUBLICKEYBYTES + 2*PARAMS_N*PARAMS_NBAR];
+    const uint8_t *pk_b = &sk_pk[BYTES_SEED_A];
+    uint8_t G2in[BYTES_PKHASH + BYTES_MU];                   // contains secret data via muprime
+    uint8_t *pkh = &G2in[0];
+    uint8_t *muprime = &G2in[BYTES_PKHASH];                  // contains secret data
+    uint8_t G2out[2*CRYPTO_BYTES];                           // contains secret data
+    uint8_t *seedSEprime = &G2out[0];                        // contains secret data
+    uint8_t shake_input_seedSEprime[1 + CRYPTO_BYTES];       // contains secret data
+
+    for (size_t i = 0; i < PARAMS_N * PARAMS_NBAR; i++) {
+        S[i] = LE_TO_UINT16(sk_S[i]);
+    }
+
+    // Compute W = C - Bp*S (mod q), and decode the randomness mu
+    frodo_unpack(Bp, PARAMS_N*PARAMS_NBAR, ct_c1, (PARAMS_LOGQ*PARAMS_N*PARAMS_NBAR)/8, PARAMS_LOGQ);
+    frodo_unpack(C, PARAMS_NBAR*PARAMS_NBAR, ct_c2, (PARAMS_LOGQ*PARAMS_NBAR*PARAMS_NBAR)/8, PARAMS_LOGQ);
+    frodo_mul_bs(W, Bp, S);
+    frodo_sub(W, C, W);
+    frodo_key_decode((uint16_t*)muprime, W);
+
+    // Generate (seedSE' || k') = G_2(pkh || mu')
+    memcpy(pkh, sk_pkh, BYTES_PKHASH);
+    shake(G2out, CRYPTO_BYTES + CRYPTO_BYTES, G2in, BYTES_PKHASH + BYTES_MU);
+
+    // Generate Sp and Ep
+    shake_input_seedSEprime[0] = 0x96;
+    memcpy(&shake_input_seedSEprime[1], seedSEprime, CRYPTO_BYTES);
+    shake((uint8_t*)Sp, (2*PARAMS_N+PARAMS_NBAR)*PARAMS_NBAR*sizeof(uint16_t), shake_input_seedSEprime, 1 + CRYPTO_BYTES);
+    for (size_t i = 0; i < (2*PARAMS_N+PARAMS_NBAR)*PARAMS_NBAR; i++) {
+        Sp[i] = LE_TO_UINT16(Sp[i]);
+    }
+    frodo_sample_n(Sp, PARAMS_N*PARAMS_NBAR);
+    frodo_sample_n(Ep, PARAMS_N*PARAMS_NBAR);
+
+    // Generate Epp, and compute W = Sp*B + Epp
+    frodo_sample_n(Epp, PARAMS_NBAR*PARAMS_NBAR);
+    frodo_unpack(B, PARAMS_N*PARAMS_NBAR, pk_b, CRYPTO_PUBLICKEYBYTES - BYTES_SEED_A, PARAMS_LOGQ);
+    frodo_mul_add_sb_plus_e(W, B, Sp, Epp);
+
+    //Regenerate S and E (we already have S, but not E)
+    uint16_t S2[2*PARAMS_N*PARAMS_NBAR] = {0};          
+    uint16_t *E = (uint16_t *)&S2[PARAMS_N*PARAMS_NBAR];
+    shake_input_seedSEprime[0] = 0x5F;
+    shake((uint8_t*)S2, 2*PARAMS_N*PARAMS_NBAR*sizeof(uint16_t), shake_input_seedSEprime, 1 + CRYPTO_BYTES);
+    for (size_t i = 0; i < 2 * PARAMS_N * PARAMS_NBAR; i++) {
+        S2[i] = LE_TO_UINT16(S2[i]);
+    }
+    frodo_sample_n(S2, PARAMS_N*PARAMS_NBAR);
+    frodo_sample_n(E, PARAMS_N*PARAMS_NBAR);
+
+    for (size_t i = 0; i < 2 * PARAMS_N * PARAMS_NBAR; i++) {
+        // Assert that S and S2 are equal
+        assert(S[i] == S2[i]);
+    }
+
+    // Calculate Eppp = Sp*E - Ep*S + Epp = (Sp*E + Epp) - (Ep*S)
+    frodo_mul_add_sb_plus_e(W2, E, Sp, Epp);
+    frodo_mul_bs(out, Ep, S);
+    frodo_sub(out, W2, out);
+    
     return 0;
 }

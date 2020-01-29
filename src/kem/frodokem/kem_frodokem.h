@@ -15,6 +15,7 @@ OQS_API OQS_STATUS OQS_KEM_frodokem_640_aes_keypair(uint8_t *public_key, uint8_t
 OQS_API OQS_STATUS OQS_KEM_frodokem_640_aes_encaps(uint8_t *ciphertext, uint8_t *shared_secret, const uint8_t *public_key);
 OQS_API OQS_STATUS OQS_KEM_frodokem_640_aes_decaps(uint8_t *shared_secret, const unsigned char *ciphertext, const uint8_t *secret_key);
 OQS_API OQS_STATUS OQS_KEM_frodokem_640_aes_decaps_measure(uint8_t *shared_secret, const unsigned char *ciphertext, const uint8_t *secret_key, uint64_t *, uint64_t *, uint32_t *, uint32_t *, uint8_t *, uint8_t *);
+OQS_API OQS_STATUS OQS_KEM_frodokem_640_aes_get_Eppp(const unsigned char *ciphertext, const uint8_t *secret_key, uint16_t *out);
 #endif
 
 #ifdef OQS_ENABLE_KEM_frodokem_640_shake
@@ -27,6 +28,7 @@ OQS_API OQS_STATUS OQS_KEM_frodokem_640_shake_keypair(uint8_t *public_key, uint8
 OQS_API OQS_STATUS OQS_KEM_frodokem_640_shake_encaps(uint8_t *ciphertext, uint8_t *shared_secret, const uint8_t *public_key);
 OQS_API OQS_STATUS OQS_KEM_frodokem_640_shake_decaps(uint8_t *shared_secret, const unsigned char *ciphertext, const uint8_t *secret_key);
 OQS_API OQS_STATUS OQS_KEM_frodokem_640_shake_decaps_measure(uint8_t *shared_secret, const unsigned char *ciphertext, const uint8_t *secret_key, uint64_t *, uint64_t *, uint32_t *, uint32_t *, uint8_t *, uint8_t *);
+OQS_API OQS_STATUS OQS_KEM_frodokem_640_shake_get_Eppp(const unsigned char *ciphertext, const uint8_t *secret_key, uint16_t *out);
 #endif
 
 #ifdef OQS_ENABLE_KEM_frodokem_976_aes
@@ -39,6 +41,7 @@ OQS_API OQS_STATUS OQS_KEM_frodokem_976_aes_keypair(uint8_t *public_key, uint8_t
 OQS_API OQS_STATUS OQS_KEM_frodokem_976_aes_encaps(uint8_t *ciphertext, uint8_t *shared_secret, const uint8_t *public_key);
 OQS_API OQS_STATUS OQS_KEM_frodokem_976_aes_decaps(uint8_t *shared_secret, const unsigned char *ciphertext, const uint8_t *secret_key);
 OQS_API OQS_STATUS OQS_KEM_frodokem_976_aes_decaps_measure(uint8_t *shared_secret, const unsigned char *ciphertext, const uint8_t *secret_key, uint64_t *, uint64_t *, uint32_t *, uint32_t *, uint8_t *, uint8_t *);
+OQS_API OQS_STATUS OQS_KEM_frodokem_976_aes_get_Eppp(const unsigned char *ciphertext, const uint8_t *secret_key, uint16_t *out);
 #endif
 
 #ifdef OQS_ENABLE_KEM_frodokem_976_shake
@@ -51,6 +54,7 @@ OQS_API OQS_STATUS OQS_KEM_frodokem_976_shake_keypair(uint8_t *public_key, uint8
 OQS_API OQS_STATUS OQS_KEM_frodokem_976_shake_encaps(uint8_t *ciphertext, uint8_t *shared_secret, const uint8_t *public_key);
 OQS_API OQS_STATUS OQS_KEM_frodokem_976_shake_decaps(uint8_t *shared_secret, const unsigned char *ciphertext, const uint8_t *secret_key);
 OQS_API OQS_STATUS OQS_KEM_frodokem_976_shake_decaps_measure(uint8_t *shared_secret, const unsigned char *ciphertext, const uint8_t *secret_key, uint64_t *, uint64_t *, uint32_t *, uint32_t *, uint8_t *, uint8_t *);
+OQS_API OQS_STATUS OQS_KEM_frodokem_976_shake_get_Eppp(const unsigned char *ciphertext, const uint8_t *secret_key, uint16_t *out);
 #endif
 
 #ifdef OQS_ENABLE_KEM_frodokem_1344_aes
@@ -63,6 +67,7 @@ OQS_API OQS_STATUS OQS_KEM_frodokem_1344_aes_keypair(uint8_t *public_key, uint8_
 OQS_API OQS_STATUS OQS_KEM_frodokem_1344_aes_encaps(uint8_t *ciphertext, uint8_t *shared_secret, const uint8_t *public_key);
 OQS_API OQS_STATUS OQS_KEM_frodokem_1344_aes_decaps(uint8_t *shared_secret, const unsigned char *ciphertext, const uint8_t *secret_key);
 OQS_API OQS_STATUS OQS_KEM_frodokem_1344_aes_decaps_measure(uint8_t *shared_secret, const unsigned char *ciphertext, const uint8_t *secret_key, uint64_t *, uint64_t *, uint32_t *, uint32_t *, uint8_t *, uint8_t *);
+OQS_API OQS_STATUS OQS_KEM_frodokem_1344_aes_get_Eppp(const unsigned char *ciphertext, const uint8_t *secret_key, uint16_t *out);
 #endif
 
 #ifdef OQS_ENABLE_KEM_frodokem_1344_shake
@@ -75,6 +80,7 @@ OQS_API OQS_STATUS OQS_KEM_frodokem_1344_shake_keypair(uint8_t *public_key, uint
 OQS_API OQS_STATUS OQS_KEM_frodokem_1344_shake_encaps(uint8_t *ciphertext, uint8_t *shared_secret, const uint8_t *public_key);
 OQS_API OQS_STATUS OQS_KEM_frodokem_1344_shake_decaps(uint8_t *shared_secret, const unsigned char *ciphertext, const uint8_t *secret_key);
 OQS_API OQS_STATUS OQS_KEM_frodokem_1344_shake_decaps_measure(uint8_t *shared_secret, const unsigned char *ciphertext, const uint8_t *secret_key, uint64_t *, uint64_t *, uint32_t *, uint32_t *, uint8_t *, uint8_t *);
+OQS_API OQS_STATUS OQS_KEM_frodokem_1344_shake_get_Eppp(const unsigned char *ciphertext, const uint8_t *secret_key, uint16_t *out);
 #endif
 
 #endif // OQS_KEM_FRODOKEM_H

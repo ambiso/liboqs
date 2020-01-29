@@ -34,6 +34,7 @@
 #define crypto_kem_enc                OQS_KEM_frodokem_976_shake_encaps
 #define crypto_kem_dec                OQS_KEM_frodokem_976_shake_decaps
 #define crypto_kem_dec_measure        OQS_KEM_frodokem_976_shake_decaps_measure
+#define crypto_kem_get_Eppp           OQS_KEM_frodokem_976_shake_get_Eppp
 
 #define frodo_sample_n oqs_kem_frodokem_976_shake_sample_n
 #define frodo_pack oqs_kem_frodokem_976_shake_pack
