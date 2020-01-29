@@ -18,6 +18,7 @@ int crypto_kem_keypair(unsigned char* pk, unsigned char* sk)
     uint8_t *sk_pk = &sk[CRYPTO_BYTES];
     uint8_t *sk_S = &sk[CRYPTO_BYTES + CRYPTO_PUBLICKEYBYTES];
     uint8_t *sk_pkh = &sk[CRYPTO_BYTES + CRYPTO_PUBLICKEYBYTES + 2*PARAMS_N*PARAMS_NBAR];
+    uint8_t *sk_E = &sk[CRYPTO_BYTES + CRYPTO_PUBLICKEYBYTES + 2*PARAMS_N*PARAMS_NBAR + BYTES_PKHASH];
     uint16_t B[PARAMS_N*PARAMS_NBAR] = {0};
     uint16_t S[2*PARAMS_N*PARAMS_NBAR] = {0};               // contains secret data
     uint16_t *E = (uint16_t *)&S[PARAMS_N*PARAMS_NBAR];     // contains secret data
@@ -51,7 +52,11 @@ int crypto_kem_keypair(unsigned char* pk, unsigned char* sk)
     for (size_t i = 0; i < PARAMS_N * PARAMS_NBAR; i++) {
         S[i] = UINT16_TO_LE(S[i]);
     }
+    for (size_t i = 0; i < PARAMS_N * PARAMS_NBAR; i++) {
+        E[i] = UINT16_TO_LE(E[i]);
+    }
     memcpy(sk_S, S, 2*PARAMS_N*PARAMS_NBAR);
+    memcpy(sk_E, E, 2*PARAMS_N*PARAMS_NBAR);
 
     // Add H(pk) to the secret key
     shake(sk_pkh, BYTES_PKHASH, pk, CRYPTO_PUBLICKEYBYTES);
@@ -353,21 +358,19 @@ int crypto_kem_dec_measure(unsigned char *ss,
 int crypto_kem_get_Eppp(const unsigned char *ct,
                         const unsigned char *sk,
                         uint16_t *out) { 
-	uint16_t B[PARAMS_N*PARAMS_NBAR] = {0};
     uint16_t Bp[PARAMS_N*PARAMS_NBAR] = {0};
     uint16_t W[PARAMS_NBAR*PARAMS_NBAR] = {0};
-    uint16_t W2[PARAMS_NBAR*PARAMS_NBAR] = {0};                // contains secret data
     uint16_t C[PARAMS_NBAR*PARAMS_NBAR] = {0};
     ALIGN_HEADER(32) uint16_t Sp[(2*PARAMS_N+PARAMS_NBAR)*PARAMS_NBAR] ALIGN_FOOTER(32) = {0};  // contains secret data
     uint16_t *Ep = (uint16_t *)&Sp[PARAMS_N*PARAMS_NBAR];     // contains secret data
     uint16_t *Epp = (uint16_t *)&Sp[2*PARAMS_N*PARAMS_NBAR];  // contains secret data
     const uint8_t *ct_c1 = &ct[0];
     const uint8_t *ct_c2 = &ct[(PARAMS_LOGQ*PARAMS_N*PARAMS_NBAR)/8];
-    const uint8_t *sk_pk = &sk[CRYPTO_BYTES];
     const uint16_t *sk_S = (uint16_t *) &sk[CRYPTO_BYTES + CRYPTO_PUBLICKEYBYTES];
+    const uint16_t *sk_E = (uint16_t *) &sk[CRYPTO_BYTES + CRYPTO_PUBLICKEYBYTES + 2*PARAMS_N*PARAMS_NBAR + BYTES_PKHASH];
     uint16_t S[PARAMS_N * PARAMS_NBAR];                      // contains secret data
+    uint16_t E[PARAMS_N * PARAMS_NBAR];                      // contains secret data
     const uint8_t *sk_pkh = &sk[CRYPTO_BYTES + CRYPTO_PUBLICKEYBYTES + 2*PARAMS_N*PARAMS_NBAR];
-    const uint8_t *pk_b = &sk_pk[BYTES_SEED_A];
     uint8_t G2in[BYTES_PKHASH + BYTES_MU];                   // contains secret data via muprime
     uint8_t *pkh = &G2in[0];
     uint8_t *muprime = &G2in[BYTES_PKHASH];                  // contains secret data
@@ -377,6 +380,9 @@ int crypto_kem_get_Eppp(const unsigned char *ct,
 
     for (size_t i = 0; i < PARAMS_N * PARAMS_NBAR; i++) {
         S[i] = LE_TO_UINT16(sk_S[i]);
+    }
+    for (size_t i = 0; i < PARAMS_N * PARAMS_NBAR; i++) {
+        E[i] = LE_TO_UINT16(sk_E[i]);
     }
 
     // Compute W = C - Bp*S (mod q), and decode the randomness mu
@@ -402,29 +408,11 @@ int crypto_kem_get_Eppp(const unsigned char *ct,
 
     // Generate Epp, and compute W = Sp*B + Epp
     frodo_sample_n(Epp, PARAMS_NBAR*PARAMS_NBAR);
-    frodo_unpack(B, PARAMS_N*PARAMS_NBAR, pk_b, CRYPTO_PUBLICKEYBYTES - BYTES_SEED_A, PARAMS_LOGQ);
-    frodo_mul_add_sb_plus_e(W, B, Sp, Epp);
-
-    //Regenerate S and E (we already have S, but not E)
-    uint16_t S2[2*PARAMS_N*PARAMS_NBAR] = {0};          
-    uint16_t *E = (uint16_t *)&S2[PARAMS_N*PARAMS_NBAR];
-    shake_input_seedSEprime[0] = 0x5F;
-    shake((uint8_t*)S2, 2*PARAMS_N*PARAMS_NBAR*sizeof(uint16_t), shake_input_seedSEprime, 1 + CRYPTO_BYTES);
-    for (size_t i = 0; i < 2 * PARAMS_N * PARAMS_NBAR; i++) {
-        S2[i] = LE_TO_UINT16(S2[i]);
-    }
-    frodo_sample_n(S2, PARAMS_N*PARAMS_NBAR);
-    frodo_sample_n(E, PARAMS_N*PARAMS_NBAR);
-
-    for (size_t i = 0; i < 2 * PARAMS_N * PARAMS_NBAR; i++) {
-        // Assert that S and S2 are equal
-        assert(S[i] == S2[i]);
-    }
 
     // Calculate Eppp = Sp*E - Ep*S + Epp = (Sp*E + Epp) - (Ep*S)
-    frodo_mul_add_sb_plus_e(W2, E, Sp, Epp);
+    frodo_mul_add_sb_plus_e(W, E, Sp, Epp);
     frodo_mul_bs(out, Ep, S);
-    frodo_sub(out, W2, out);
+    frodo_sub(out, W, out);
     
     return 0;
 }

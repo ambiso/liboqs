@@ -7,7 +7,7 @@
 
 #ifdef OQS_ENABLE_KEM_frodokem_640_aes
 #define OQS_KEM_frodokem_640_aes_length_public_key 9616
-#define OQS_KEM_frodokem_640_aes_length_secret_key 19888
+#define OQS_KEM_frodokem_640_aes_length_secret_key (19888+10240)
 #define OQS_KEM_frodokem_640_aes_length_ciphertext 9720
 #define OQS_KEM_frodokem_640_aes_length_shared_secret 16
 OQS_KEM *OQS_KEM_frodokem_640_aes_new(void);
@@ -20,7 +20,7 @@ OQS_API OQS_STATUS OQS_KEM_frodokem_640_aes_get_Eppp(const unsigned char *cipher
 
 #ifdef OQS_ENABLE_KEM_frodokem_640_shake
 #define OQS_KEM_frodokem_640_shake_length_public_key 9616
-#define OQS_KEM_frodokem_640_shake_length_secret_key 19888
+#define OQS_KEM_frodokem_640_shake_length_secret_key (19888+10240)
 #define OQS_KEM_frodokem_640_shake_length_ciphertext 9720
 #define OQS_KEM_frodokem_640_shake_length_shared_secret 16
 OQS_KEM *OQS_KEM_frodokem_640_shake_new(void);
@@ -33,7 +33,7 @@ OQS_API OQS_STATUS OQS_KEM_frodokem_640_shake_get_Eppp(const unsigned char *ciph
 
 #ifdef OQS_ENABLE_KEM_frodokem_976_aes
 #define OQS_KEM_frodokem_976_aes_length_public_key 15632
-#define OQS_KEM_frodokem_976_aes_length_secret_key 31296
+#define OQS_KEM_frodokem_976_aes_length_secret_key (31296 + 15616)
 #define OQS_KEM_frodokem_976_aes_length_ciphertext 15744
 #define OQS_KEM_frodokem_976_aes_length_shared_secret 24
 OQS_KEM *OQS_KEM_frodokem_976_aes_new(void);
@@ -46,7 +46,7 @@ OQS_API OQS_STATUS OQS_KEM_frodokem_976_aes_get_Eppp(const unsigned char *cipher
 
 #ifdef OQS_ENABLE_KEM_frodokem_976_shake
 #define OQS_KEM_frodokem_976_shake_length_public_key 15632
-#define OQS_KEM_frodokem_976_shake_length_secret_key 31296
+#define OQS_KEM_frodokem_976_shake_length_secret_key (31296 + 15616)
 #define OQS_KEM_frodokem_976_shake_length_ciphertext 15744
 #define OQS_KEM_frodokem_976_shake_length_shared_secret 24
 OQS_KEM *OQS_KEM_frodokem_976_shake_new(void);
@@ -59,7 +59,7 @@ OQS_API OQS_STATUS OQS_KEM_frodokem_976_shake_get_Eppp(const unsigned char *ciph
 
 #ifdef OQS_ENABLE_KEM_frodokem_1344_aes
 #define OQS_KEM_frodokem_1344_aes_length_public_key 21520
-#define OQS_KEM_frodokem_1344_aes_length_secret_key 43088
+#define OQS_KEM_frodokem_1344_aes_length_secret_key (43088 + 21504)
 #define OQS_KEM_frodokem_1344_aes_length_ciphertext 21632
 #define OQS_KEM_frodokem_1344_aes_length_shared_secret 32
 OQS_KEM *OQS_KEM_frodokem_1344_aes_new(void);
@@ -72,7 +72,7 @@ OQS_API OQS_STATUS OQS_KEM_frodokem_1344_aes_get_Eppp(const unsigned char *ciphe
 
 #ifdef OQS_ENABLE_KEM_frodokem_1344_shake
 #define OQS_KEM_frodokem_1344_shake_length_public_key 21520
-#define OQS_KEM_frodokem_1344_shake_length_secret_key 43088
+#define OQS_KEM_frodokem_1344_shake_length_secret_key (43088 + 21504)
 #define OQS_KEM_frodokem_1344_shake_length_ciphertext 21632
 #define OQS_KEM_frodokem_1344_shake_length_shared_secret 32
 OQS_KEM *OQS_KEM_frodokem_1344_shake_new(void);
