@@ -81,6 +81,39 @@ int PQCLEAN_HQCRMRS256_CLEAN_crypto_kem_enc(unsigned char *ct, unsigned char *ss
 
 
 /**
+ * @brief Encapsulation of the HQC_KEM IND_CAA2 scheme
+ *
+ * @param[out] ct String containing the ciphertext
+ * @param[out] ss String containing the shared secret
+ * @param[in] pk String containing the public key
+ * @returns 0 if encapsulation is successful
+ */
+int PQCLEAN_HQCRMRS256_CLEAN_crypto_kem_numrejections(uint8_t m[VEC_K_SIZE_BYTES], size_t *seed_expanded_bytes) {
+    AES_XOF_struct seedexpander;
+    uint8_t theta[SHA512_BYTES] = {0};
+    uint64_t r1[VEC_N_SIZE_64] = {0};
+    uint32_t r2[PARAM_OMEGA_R] = {0};
+    uint64_t e[VEC_N_SIZE_64] = {0};
+
+    // Computing theta
+    sha3_512(theta, m, VEC_K_SIZE_BYTES);
+
+    // Create seed_expander from theta
+    seedexpander_init(&seedexpander, theta, theta + 32, SEEDEXPANDER_MAX_LENGTH);
+
+    // Generate r1, r2 and e
+    PQCLEAN_HQCRMRS256_CLEAN_vect_set_random_fixed_weight(&seedexpander, r1, PARAM_OMEGA_R);
+    PQCLEAN_HQCRMRS256_CLEAN_vect_set_random_fixed_weight_by_coordinates(&seedexpander, r2, PARAM_OMEGA_R);
+    PQCLEAN_HQCRMRS256_CLEAN_vect_set_random_fixed_weight(&seedexpander, e, PARAM_OMEGA_E);
+
+    *seed_expanded_bytes = seedexpander.buffer_pos;
+
+    return 0;
+}
+
+
+
+/**
  * @brief Decapsulation of the HQC_KEM IND_CAA2 scheme
  *
  * @param[out] ss String containing the shared secret

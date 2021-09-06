@@ -32,11 +32,13 @@ OQS_KEM *OQS_KEM_hqc_256_new() {
 
 extern int PQCLEAN_HQCRMRS256_CLEAN_crypto_kem_keypair(uint8_t *pk, uint8_t *sk);
 extern int PQCLEAN_HQCRMRS256_CLEAN_crypto_kem_enc(uint8_t *ct, uint8_t *ss, const uint8_t *pk);
+extern int PQCLEAN_HQCRMRS256_CLEAN_crypto_kem_numrejections(uint8_t *plaintext, size_t* seed_expanded_bytes);
 extern int PQCLEAN_HQCRMRS256_CLEAN_crypto_kem_dec(uint8_t *ss, const uint8_t *ct, const uint8_t *sk);
 
 #if defined(OQS_ENABLE_KEM_hqc_256_avx2)
 extern int PQCLEAN_HQCRMRS256_AVX2_crypto_kem_keypair(uint8_t *pk, uint8_t *sk);
 extern int PQCLEAN_HQCRMRS256_AVX2_crypto_kem_enc(uint8_t *ct, uint8_t *ss, const uint8_t *pk);
+extern int PQCLEAN_HQCRMRS256_AVX2_crypto_kem_numrejections(uint8_t *plaintext, size_t* seed_expanded_bytes);
 extern int PQCLEAN_HQCRMRS256_AVX2_crypto_kem_dec(uint8_t *ss, const uint8_t *ct, const uint8_t *sk);
 #endif
 
@@ -69,6 +71,22 @@ OQS_API OQS_STATUS OQS_KEM_hqc_256_encaps(uint8_t *ciphertext, uint8_t *shared_s
 #endif /* OQS_DIST_BUILD */
 #else
 	return (OQS_STATUS) PQCLEAN_HQCRMRS256_CLEAN_crypto_kem_enc(ciphertext, shared_secret, public_key);
+#endif
+}
+
+OQS_API OQS_STATUS OQS_KEM_hqc_256_numrejections(uint8_t *plaintext, size_t *seed_expanded_bytes) {
+#if defined(OQS_ENABLE_KEM_hqc_256_avx2)
+#if defined(OQS_DIST_BUILD)
+	if (OQS_CPU_has_extension(OQS_CPU_EXT_AVX2) && OQS_CPU_has_extension(OQS_CPU_EXT_BMI1) && OQS_CPU_has_extension(OQS_CPU_EXT_PCLMULQDQ)) {
+#endif /* OQS_DIST_BUILD */
+		return (OQS_STATUS) PQCLEAN_HQCRMRS256_AVX2_crypto_kem_numrejections(plaintext, seed_expanded_bytes);
+#if defined(OQS_DIST_BUILD)
+	} else {
+		return (OQS_STATUS) PQCLEAN_HQCRMRS256_CLEAN_crypto_kem_numrejections(plaintext, seed_expanded_bytes);
+	}
+#endif /* OQS_DIST_BUILD */
+#else
+	return (OQS_STATUS) PQCLEAN_HQCRMRS256_CLEAN_crypto_kem_numrejections(plaintext, seed_expanded_bytes);
 #endif
 }
 
