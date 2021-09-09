@@ -106,8 +106,8 @@ void PQCLEAN_HQCRMRS256_CLEAN_hqc_secret_key_from_string(uint64_t *x, uint32_t *
     memcpy(pk, sk, PUBLIC_KEY_BYTES);
 
     seedexpander_init(&sk_seedexpander, sk_seed, sk_seed + 32, SEEDEXPANDER_MAX_LENGTH);
-    PQCLEAN_HQCRMRS256_CLEAN_vect_set_random_fixed_weight(&sk_seedexpander, x, PARAM_OMEGA);
-    PQCLEAN_HQCRMRS256_CLEAN_vect_set_random_fixed_weight_by_coordinates(&sk_seedexpander, y, PARAM_OMEGA);
+    PQCLEAN_HQCRMRS256_CLEAN_vect_set_random_fixed_weight(NULL, &sk_seedexpander, x, PARAM_OMEGA);
+    PQCLEAN_HQCRMRS256_CLEAN_vect_set_random_fixed_weight_by_coordinates(NULL, &sk_seedexpander, y, PARAM_OMEGA);
 }
 
 /**

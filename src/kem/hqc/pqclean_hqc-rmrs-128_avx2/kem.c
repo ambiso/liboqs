@@ -105,12 +105,14 @@ int PQCLEAN_HQCRMRS128_AVX2_crypto_kem_numrejections(uint8_t m[VEC_K_SIZE_BYTES]
     // Create seed_expander from theta
     seedexpander_init(&seedexpander, theta, theta + 32, SEEDEXPANDER_MAX_LENGTH);
 
-    // Generate r1, r2 and e
-    PQCLEAN_HQCRMRS128_AVX2_vect_set_random_fixed_weight(&seedexpander, r1, PARAM_OMEGA_R);
-    PQCLEAN_HQCRMRS128_AVX2_vect_set_random_fixed_weight(&seedexpander, r2, PARAM_OMEGA_R);
-    PQCLEAN_HQCRMRS128_AVX2_vect_set_random_fixed_weight(&seedexpander, e, PARAM_OMEGA_E);
+    int trace = 0;
 
-    *seed_expanded_bytes = seedexpander.buffer_pos;
+    // Generate r1, r2 and e
+    PQCLEAN_HQCRMRS128_AVX2_vect_set_random_fixed_weight(&trace, &seedexpander, r1, PARAM_OMEGA_R);
+    PQCLEAN_HQCRMRS128_AVX2_vect_set_random_fixed_weight(&trace ,&seedexpander, r2, PARAM_OMEGA_R);
+    PQCLEAN_HQCRMRS128_AVX2_vect_set_random_fixed_weight(&trace, &seedexpander, e, PARAM_OMEGA_E);
+
+    *seed_expanded_bytes = trace;
 
     return 0;
 }

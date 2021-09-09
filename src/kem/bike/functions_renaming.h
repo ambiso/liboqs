@@ -46,6 +46,7 @@
 #define keypair RENAME_FUNC_NAME(keypair)
 #define decaps RENAME_FUNC_NAME(decaps)
 #define encaps RENAME_FUNC_NAME(encaps)
+#define numrejections RENAME_FUNC_NAME(numrejections)
 
 #define aes_ctr_prf RENAME_FUNC_NAME(aes_ctr_prf)
 #define sample_uniform_r_bits_with_fixed_prf_context RENAME_FUNC_NAME(sample_uniform_r_bits_with_fixed_prf_context)

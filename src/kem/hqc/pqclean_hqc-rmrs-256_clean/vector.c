@@ -28,7 +28,7 @@
  * @param[in] weight Integer that is the Hamming weight
  * @param[in] ctx Pointer to the context of the seed expander
  */
-void PQCLEAN_HQCRMRS256_CLEAN_vect_set_random_fixed_weight_by_coordinates(AES_XOF_struct *ctx, uint32_t *v, uint16_t weight) {
+void PQCLEAN_HQCRMRS256_CLEAN_vect_set_random_fixed_weight_by_coordinates(int *trace, AES_XOF_struct *ctx, uint32_t *v, uint16_t weight) {
     size_t random_bytes_size = 3 * weight;
     uint8_t rand_bytes[3 * PARAM_OMEGA_R] = {0}; // weight is expected to be <= PARAM_OMEGA_R
     uint8_t inc;
@@ -38,6 +38,7 @@ void PQCLEAN_HQCRMRS256_CLEAN_vect_set_random_fixed_weight_by_coordinates(AES_XO
     j = random_bytes_size;
     while (i < weight) {
         do {
+            if (trace != NULL) *trace += 1;
             if (j == random_bytes_size) {
                 seedexpander(ctx, rand_bytes, random_bytes_size);
                 j = 0;
@@ -79,10 +80,10 @@ void PQCLEAN_HQCRMRS256_CLEAN_vect_set_random_fixed_weight_by_coordinates(AES_XO
  * @param[in] weight Integer that is the Hamming weight
  * @param[in] ctx Pointer to the context of the seed expander
  */
-void PQCLEAN_HQCRMRS256_CLEAN_vect_set_random_fixed_weight(AES_XOF_struct *ctx, uint64_t *v, uint16_t weight) {
+void PQCLEAN_HQCRMRS256_CLEAN_vect_set_random_fixed_weight(int * trace, AES_XOF_struct *ctx, uint64_t *v, uint16_t weight) {
     uint32_t tmp[PARAM_OMEGA_R] = {0};
 
-    PQCLEAN_HQCRMRS256_CLEAN_vect_set_random_fixed_weight_by_coordinates(ctx, tmp, weight);
+    PQCLEAN_HQCRMRS256_CLEAN_vect_set_random_fixed_weight_by_coordinates(trace, ctx, tmp, weight);
 
     for (size_t i = 0; i < weight; ++i) {
         int32_t index = tmp[i] / 64;

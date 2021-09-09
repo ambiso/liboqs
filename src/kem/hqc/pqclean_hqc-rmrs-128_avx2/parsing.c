@@ -106,8 +106,8 @@ void PQCLEAN_HQCRMRS128_AVX2_hqc_secret_key_from_string(uint64_t *x, uint64_t *y
     memcpy(pk, sk, PUBLIC_KEY_BYTES);
 
     seedexpander_init(&sk_seedexpander, sk_seed, sk_seed + 32, SEEDEXPANDER_MAX_LENGTH);
-    PQCLEAN_HQCRMRS128_AVX2_vect_set_random_fixed_weight(&sk_seedexpander, x, PARAM_OMEGA);
-    PQCLEAN_HQCRMRS128_AVX2_vect_set_random_fixed_weight(&sk_seedexpander, y, PARAM_OMEGA);
+    PQCLEAN_HQCRMRS128_AVX2_vect_set_random_fixed_weight(NULL, &sk_seedexpander, x, PARAM_OMEGA);
+    PQCLEAN_HQCRMRS128_AVX2_vect_set_random_fixed_weight(NULL, &sk_seedexpander, y, PARAM_OMEGA);
 }
 
 /**

@@ -29,7 +29,7 @@
  * @param[in] weight Integer that is the Hamming weight
  * @param[in] ctx Pointer to the context of the seed expander
  */
-void PQCLEAN_HQCRMRS256_AVX2_vect_set_random_fixed_weight(AES_XOF_struct *ctx, uint64_t *v, uint16_t weight) {
+void PQCLEAN_HQCRMRS256_AVX2_vect_set_random_fixed_weight(int * trace, AES_XOF_struct *ctx, uint64_t *v, uint16_t weight) {
     size_t random_bytes_size = 3 * weight;
     uint8_t rand_bytes[3 * PARAM_OMEGA_R] = {0};
     uint32_t tmp[PARAM_OMEGA_R] = {0};
@@ -48,6 +48,7 @@ void PQCLEAN_HQCRMRS256_AVX2_vect_set_random_fixed_weight(AES_XOF_struct *ctx, u
     j = random_bytes_size;
     while (i < weight) {
         do {
+            if (trace != NULL) *trace += 1;
             if (j == random_bytes_size) {
                 seedexpander(ctx, rand_bytes, random_bytes_size);
                 j = 0;
@@ -64,6 +65,7 @@ void PQCLEAN_HQCRMRS256_AVX2_vect_set_random_fixed_weight(AES_XOF_struct *ctx, u
         inc = 1;
         for (k = 0; k < i; k++) {
             if (tmp[k] == tmp[i]) {
+                if (trace != NULL) *trace += 1;
                 inc = 0;
             }
         }

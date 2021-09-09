@@ -31,7 +31,7 @@ _INLINE_ ret_t function_h(OUT pad_e_t *e, IN const m_t *m)
   DEFER_CLEANUP(seed_t seed = {0}, seed_cleanup);
 
   convert_m_to_seed_type(&seed, m);
-  return generate_error_vector(e, &seed);
+  return generate_error_vector(NULL, e, &seed);
 }
 
 // out = L(e)
@@ -217,6 +217,19 @@ int encaps(OUT unsigned char *     ct,
   return SUCCESS;
 }
 
+int numrejections(OUT int * rejections, IN unsigned char * m)
+{
+  DEFER_CLEANUP(pad_e_t e, pad_e_cleanup);
+  DEFER_CLEANUP(seed_t seed = {0}, seed_cleanup);
+
+  m_t* mt = (m_t*)m;
+
+  convert_m_to_seed_type(&seed, mt);
+  GUARD( generate_error_vector(rejections, &e, &seed) );
+
+  return SUCCESS;
+}
+
 // Decapsulate - ct is a key encapsulation message (ciphertext),
 //               sk is the private key,
 //               ss is the shared secret
@@ -245,7 +258,7 @@ int decaps(OUT unsigned char *     ss,
   // (Note: possibly, a "fixed" zeroed error vector could suffice too,
   // and serve this generation)
   get_seeds(&seeds);
-  GUARD(generate_error_vector(&e_prime, &seeds.seed[0]));
+  GUARD(generate_error_vector(NULL, &e_prime, &seeds.seed[0]));
 
   // Decode and on success check if |e|=T (all in constant-time)
   volatile uint32_t success_cond = (decode(&e, &l_ct, &l_sk) == SUCCESS);

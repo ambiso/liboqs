@@ -10,9 +10,9 @@
 #include "randombytes.h"
 #include <stdint.h>
 
-void PQCLEAN_HQCRMRS128_CLEAN_vect_set_random_fixed_weight_by_coordinates(AES_XOF_struct *ctx, uint32_t *v, uint16_t weight);
+void PQCLEAN_HQCRMRS128_CLEAN_vect_set_random_fixed_weight_by_coordinates(int * trace, AES_XOF_struct *ctx, uint32_t *v, uint16_t weight);
 
-void PQCLEAN_HQCRMRS128_CLEAN_vect_set_random_fixed_weight(AES_XOF_struct *ctx, uint64_t *v, uint16_t weight);
+void PQCLEAN_HQCRMRS128_CLEAN_vect_set_random_fixed_weight(int * trace, AES_XOF_struct *ctx, uint64_t *v, uint16_t weight);
 
 void PQCLEAN_HQCRMRS128_CLEAN_vect_set_random(AES_XOF_struct *ctx, uint64_t *v);
 

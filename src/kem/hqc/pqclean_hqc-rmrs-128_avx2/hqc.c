@@ -51,8 +51,8 @@ void PQCLEAN_HQCRMRS128_AVX2_hqc_pke_keygen(unsigned char *pk, unsigned char *sk
     seedexpander_init(&pk_seedexpander, pk_seed, pk_seed + 32, SEEDEXPANDER_MAX_LENGTH);
 
     // Compute secret key
-    PQCLEAN_HQCRMRS128_AVX2_vect_set_random_fixed_weight(&sk_seedexpander, x, PARAM_OMEGA);
-    PQCLEAN_HQCRMRS128_AVX2_vect_set_random_fixed_weight(&sk_seedexpander, y, PARAM_OMEGA);
+    PQCLEAN_HQCRMRS128_AVX2_vect_set_random_fixed_weight(NULL, &sk_seedexpander, x, PARAM_OMEGA);
+    PQCLEAN_HQCRMRS128_AVX2_vect_set_random_fixed_weight(NULL, &sk_seedexpander, y, PARAM_OMEGA);
 
     // Compute public key
     PQCLEAN_HQCRMRS128_AVX2_vect_set_random(&pk_seedexpander, h);
@@ -104,9 +104,9 @@ void PQCLEAN_HQCRMRS128_AVX2_hqc_pke_encrypt(uint64_t *u, uint64_t *v, uint8_t *
     PQCLEAN_HQCRMRS128_AVX2_hqc_public_key_from_string(h, s, pk);
 
     // Generate r1, r2 and e
-    PQCLEAN_HQCRMRS128_AVX2_vect_set_random_fixed_weight(&seedexpander, r1, PARAM_OMEGA_R);
-    PQCLEAN_HQCRMRS128_AVX2_vect_set_random_fixed_weight(&seedexpander, r2, PARAM_OMEGA_R);
-    PQCLEAN_HQCRMRS128_AVX2_vect_set_random_fixed_weight(&seedexpander, e, PARAM_OMEGA_E);
+    PQCLEAN_HQCRMRS128_AVX2_vect_set_random_fixed_weight(NULL, &seedexpander, r1, PARAM_OMEGA_R);
+    PQCLEAN_HQCRMRS128_AVX2_vect_set_random_fixed_weight(NULL, &seedexpander, r2, PARAM_OMEGA_R);
+    PQCLEAN_HQCRMRS128_AVX2_vect_set_random_fixed_weight(NULL, &seedexpander, e, PARAM_OMEGA_E);
 
 
 
