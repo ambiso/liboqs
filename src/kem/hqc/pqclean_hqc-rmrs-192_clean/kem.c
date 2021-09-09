@@ -88,6 +88,46 @@ int PQCLEAN_HQCRMRS192_CLEAN_crypto_kem_enc(unsigned char *ct, unsigned char *ss
  * @param[in] pk String containing the public key
  * @returns 0 if encapsulation is successful
  */
+int PQCLEAN_HQCRMRS192_CLEAN_crypto_kem_enc_with_m(unsigned char *ct, unsigned char *ss, const unsigned char *pk, const unsigned char *m) {
+
+    uint8_t theta[SHA512_BYTES] = {0};
+    uint64_t u[VEC_N_SIZE_64] = {0};
+    uint64_t v[VEC_N1N2_SIZE_64] = {0};
+    unsigned char d[SHA512_BYTES] = {0};
+    unsigned char mc[VEC_K_SIZE_BYTES + VEC_N_SIZE_BYTES + VEC_N1N2_SIZE_BYTES] = {0};
+
+    // Computing theta
+    sha3_512(theta, m, VEC_K_SIZE_BYTES);
+
+    // Encrypting m
+    PQCLEAN_HQCRMRS192_CLEAN_hqc_pke_encrypt(u, v, (uint8_t*)m, theta, pk);
+
+    // Computing d
+    sha512(d, m, VEC_K_SIZE_BYTES);
+
+    // Computing shared secret
+    memcpy(mc, m, VEC_K_SIZE_BYTES);
+    PQCLEAN_HQCRMRS192_CLEAN_store8_arr(mc + VEC_K_SIZE_BYTES, VEC_N_SIZE_BYTES, u, VEC_N_SIZE_64);
+    PQCLEAN_HQCRMRS192_CLEAN_store8_arr(mc + VEC_K_SIZE_BYTES + VEC_N_SIZE_BYTES, VEC_N1N2_SIZE_BYTES, v, VEC_N1N2_SIZE_64);
+    sha512(ss, mc, VEC_K_SIZE_BYTES + VEC_N_SIZE_BYTES + VEC_N1N2_SIZE_BYTES);
+
+    // Computing ciphertext
+    PQCLEAN_HQCRMRS192_CLEAN_hqc_ciphertext_to_string(ct, u, v, d);
+
+
+    return 0;
+}
+
+
+
+/**
+ * @brief Encapsulation of the HQC_KEM IND_CAA2 scheme
+ *
+ * @param[out] ct String containing the ciphertext
+ * @param[out] ss String containing the shared secret
+ * @param[in] pk String containing the public key
+ * @returns 0 if encapsulation is successful
+ */
 int PQCLEAN_HQCRMRS192_CLEAN_crypto_kem_numrejections(uint8_t m[VEC_K_SIZE_BYTES], size_t *seed_expanded_bytes) {
     AES_XOF_struct seedexpander;
     uint8_t theta[SHA512_BYTES] = {0};
