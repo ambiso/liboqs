@@ -111,7 +111,7 @@ void PQCLEAN_HQCRMRS128_CLEAN_hqc_pke_encrypt(uint64_t *u, uint64_t *v, uint8_t 
 
 }
 
-void PQCLEAN_HQCRMRS128_CLEAN_hqc_pke_decrypt_intermediates(uint8_t *m, uint8_t *rmdecoded, const uint64_t *u, const uint64_t *v, const unsigned char *sk) {
+void PQCLEAN_HQCRMRS128_CLEAN_hqc_pke_decrypt_intermediates(uint8_t *m, uint8_t *rmencoded, uint8_t *rmdecoded, const uint64_t *u, const uint64_t *v, const unsigned char *sk) {
     uint8_t pk[PUBLIC_KEY_BYTES] = {0};
     uint64_t tmp1[VEC_N_SIZE_64] = {0};
     uint64_t tmp2[VEC_N_SIZE_64] = {0};
@@ -119,6 +119,7 @@ void PQCLEAN_HQCRMRS128_CLEAN_hqc_pke_decrypt_intermediates(uint8_t *m, uint8_t 
     AES_XOF_struct perm_seedexpander;
     uint8_t perm_seed[SEED_BYTES] = {0};    
     uint8_t tmpdecode[VEC_N1_SIZE_BYTES] = {0};
+    uint8_t tmpencode[VEC_N1_SIZE_BYTES] = {0};
 
     // Retrieve x, y, pk from secret key
     PQCLEAN_HQCRMRS128_CLEAN_hqc_secret_key_from_string(tmp1, y, pk, sk);
@@ -138,6 +139,9 @@ void PQCLEAN_HQCRMRS128_CLEAN_hqc_pke_decrypt_intermediates(uint8_t *m, uint8_t 
     PQCLEAN_HQCRMRS128_CLEAN_reed_muller_decode(tmpdecode, (uint8_t *)tmp1);
     memcpy(rmdecoded, tmpdecode, sizeof(tmpdecode));
     PQCLEAN_HQCRMRS128_CLEAN_reed_solomon_decode(m, tmpdecode);
+
+    PQCLEAN_HQCRMRS128_CLEAN_reed_solomon_encode(tmpencode, m);
+    memcpy(rmencoded, tmpencode, sizeof(tmpencode));
 }
 
 /**
