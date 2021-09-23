@@ -6,7 +6,10 @@
 #include "parsing.h"
 #include "randombytes.h"
 #include "vector.h"
+#include "reed_muller.h"
+#include "reed_solomon.h"
 #include <stdint.h>
+#include <string.h>
 /**
  * @file hqc.c
  * @brief Implementation of hqc.h
@@ -106,6 +109,35 @@ void PQCLEAN_HQCRMRS192_CLEAN_hqc_pke_encrypt(uint64_t *u, uint64_t *v, uint8_t 
     PQCLEAN_HQCRMRS192_CLEAN_vect_add(tmp2, tmp1, tmp2, VEC_N_SIZE_64);
     PQCLEAN_HQCRMRS192_CLEAN_vect_resize(v, PARAM_N1N2, tmp2, PARAM_N);
 
+}
+
+void PQCLEAN_HQCRMRS192_CLEAN_hqc_pke_decrypt_intermediates(uint8_t *m, uint8_t *rmdecoded, const uint64_t *u, const uint64_t *v, const unsigned char *sk) {
+    uint8_t pk[PUBLIC_KEY_BYTES] = {0};
+    uint64_t tmp1[VEC_N_SIZE_64] = {0};
+    uint64_t tmp2[VEC_N_SIZE_64] = {0};
+    uint32_t y[PARAM_OMEGA] = {0};
+    AES_XOF_struct perm_seedexpander;
+    uint8_t perm_seed[SEED_BYTES] = {0};    
+    uint8_t tmpdecode[VEC_N1_SIZE_BYTES] = {0};
+
+    // Retrieve x, y, pk from secret key
+    PQCLEAN_HQCRMRS192_CLEAN_hqc_secret_key_from_string(tmp1, y, pk, sk);
+
+    randombytes(perm_seed, SEED_BYTES);
+    seedexpander_init(&perm_seedexpander, perm_seed, perm_seed + 32, SEEDEXPANDER_MAX_LENGTH);
+
+    // Compute v - u.y
+    PQCLEAN_HQCRMRS192_CLEAN_vect_resize(tmp1, PARAM_N, v, PARAM_N1N2);
+    PQCLEAN_HQCRMRS192_CLEAN_vect_mul(tmp2, y, u, PARAM_OMEGA, &perm_seedexpander);
+    PQCLEAN_HQCRMRS192_CLEAN_vect_add(tmp2, tmp1, tmp2, VEC_N_SIZE_64);
+
+
+    // Compute m by decoding v - u.y
+    PQCLEAN_HQCRMRS192_CLEAN_store8_arr((uint8_t *)tmp1, VEC_N_SIZE_BYTES, tmp2, VEC_N_SIZE_64);
+
+    PQCLEAN_HQCRMRS192_CLEAN_reed_muller_decode(tmpdecode, (uint8_t *)tmp1);
+    memcpy(rmdecoded, tmpdecode, sizeof(tmpdecode));
+    PQCLEAN_HQCRMRS192_CLEAN_reed_solomon_decode(m, tmpdecode);
 }
 
 
