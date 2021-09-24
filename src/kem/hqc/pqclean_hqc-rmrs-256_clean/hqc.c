@@ -178,3 +178,42 @@ void PQCLEAN_HQCRMRS256_CLEAN_hqc_pke_decrypt(uint8_t *m, const uint64_t *u, con
     PQCLEAN_HQCRMRS256_CLEAN_store8_arr((uint8_t *)tmp1, VEC_N_SIZE_BYTES, tmp2, VEC_N_SIZE_64);
     PQCLEAN_HQCRMRS256_CLEAN_code_decode(m, (uint8_t *)tmp1);
 }
+
+
+
+/**
+ * @brief e' extraction of the HQC_PKE IND_CPA scheme
+ *
+ * @param[out] m Vector representing the decrypted message
+ * @param[in] u Vector u (first part of the ciphertext)
+ * @param[in] v Vector v (second part of the ciphertext)
+ * @param[in] sk String containing the secret key
+ */
+void PQCLEAN_HQCRMRS256_CLEAN_hqc_pke_eprime(uint8_t *eprime, uint8_t *m, const uint64_t *u, const uint64_t *v, const unsigned char *sk) {
+    uint8_t pk[PUBLIC_KEY_BYTES] = {0};
+    uint64_t tmp1[VEC_N_SIZE_64] = {0};
+    uint64_t tmp2[VEC_N_SIZE_64] = {0};
+    uint32_t y[PARAM_OMEGA] = {0};
+    AES_XOF_struct perm_seedexpander;
+    uint8_t perm_seed[SEED_BYTES] = {0};
+
+    // Retrieve x, y, pk from secret key
+    PQCLEAN_HQCRMRS256_CLEAN_hqc_secret_key_from_string(tmp1, y, pk, sk);
+
+    randombytes(perm_seed, SEED_BYTES);
+    seedexpander_init(&perm_seedexpander, perm_seed, perm_seed + 32, SEEDEXPANDER_MAX_LENGTH);
+
+    // Compute v - u.y
+    PQCLEAN_HQCRMRS256_CLEAN_vect_resize(tmp1, PARAM_N, v, PARAM_N1N2);
+    PQCLEAN_HQCRMRS256_CLEAN_vect_mul(tmp2, y, u, PARAM_OMEGA, &perm_seedexpander);
+    PQCLEAN_HQCRMRS256_CLEAN_vect_add(tmp2, tmp1, tmp2, VEC_N_SIZE_64);
+    
+    // Compute m.G
+    PQCLEAN_HQCRMRS256_CLEAN_code_encode((uint8_t *)tmp1, m);
+    PQCLEAN_HQCRMRS256_CLEAN_load8_arr(tmp1, VEC_N1N2_SIZE_64, (uint8_t *)tmp1, VEC_N1N2_SIZE_BYTES);
+    PQCLEAN_HQCRMRS256_CLEAN_vect_resize(tmp1, PARAM_N, tmp1, PARAM_N1N2);
+
+    // Compute e' = v - u.y + m.G
+    PQCLEAN_HQCRMRS256_CLEAN_vect_add(tmp2, tmp1, tmp2, VEC_N_SIZE_64);
+    PQCLEAN_HQCRMRS256_CLEAN_store8_arr(eprime, VEC_N1N2_SIZE_BYTES, tmp2, VEC_N_SIZE_64);
+}
