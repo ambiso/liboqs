@@ -8,6 +8,7 @@
 #include "vector.h"
 #include "reed_muller.h"
 #include "reed_solomon.h"
+#include "fips202.h"
 #include <stdint.h>
 #include <string.h>
 /**
@@ -109,6 +110,22 @@ void PQCLEAN_HQCRMRS192_CLEAN_hqc_pke_encrypt(uint64_t *u, uint64_t *v, uint8_t 
     PQCLEAN_HQCRMRS192_CLEAN_vect_add(tmp2, tmp1, tmp2, VEC_N_SIZE_64);
     PQCLEAN_HQCRMRS192_CLEAN_vect_resize(v, PARAM_N1N2, tmp2, PARAM_N);
 
+}
+
+void PQCLEAN_HQCRMRS192_CLEAN_hqc_pke_error_components(const unsigned char *m, uint64_t *r1, uint64_t *r2, uint64_t *e) {
+    AES_XOF_struct seedexpander;
+    uint8_t theta[SHA512_BYTES] = {0};
+    
+    // Computing theta
+    sha3_512(theta, m, VEC_K_SIZE_BYTES);
+
+    // Create seed_expander from theta
+    seedexpander_init(&seedexpander, theta, theta + 32, SEEDEXPANDER_MAX_LENGTH);
+
+    // Generate r1, r2 and e
+    PQCLEAN_HQCRMRS192_CLEAN_vect_set_random_fixed_weight(NULL, &seedexpander, r1, PARAM_OMEGA_R);
+    PQCLEAN_HQCRMRS192_CLEAN_vect_set_random_fixed_weight(NULL, &seedexpander, r2, PARAM_OMEGA_R);
+    PQCLEAN_HQCRMRS192_CLEAN_vect_set_random_fixed_weight(NULL, &seedexpander, e, PARAM_OMEGA_E);
 }
 
 void PQCLEAN_HQCRMRS192_CLEAN_hqc_pke_decrypt_intermediates(uint8_t *m, uint8_t *rmencoded, uint8_t *rmdecoded, const uint64_t *u, const uint64_t *v, const unsigned char *sk) {
