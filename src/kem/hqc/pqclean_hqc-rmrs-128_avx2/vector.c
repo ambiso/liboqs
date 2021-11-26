@@ -48,8 +48,9 @@ void PQCLEAN_HQCRMRS128_AVX2_vect_set_random_fixed_weight(int * trace, AES_XOF_s
     j = random_bytes_size;
     while (i < weight) {
         do {
+            if (trace != NULL) *trace += 1;
             if (j == random_bytes_size) {
-                if (trace != NULL) *trace += 1;
+                if (trace != NULL) *trace += 1000;
                 seedexpander(ctx, rand_bytes, random_bytes_size);
                 j = 0;
             }
@@ -65,7 +66,7 @@ void PQCLEAN_HQCRMRS128_AVX2_vect_set_random_fixed_weight(int * trace, AES_XOF_s
         inc = 1;
         for (k = 0; k < i; k++) {
             if (tmp[k] == tmp[i]) {
-                //if (trace != NULL) *trace += 1;
+                if (trace != NULL) *trace += 1;
                 inc = 0;
             }
         }

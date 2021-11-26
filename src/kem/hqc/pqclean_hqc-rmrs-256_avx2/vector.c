@@ -50,6 +50,7 @@ void PQCLEAN_HQCRMRS256_AVX2_vect_set_random_fixed_weight(int * trace, AES_XOF_s
         do {
             if (trace != NULL) *trace += 1;
             if (j == random_bytes_size) {
+                if (trace != NULL) *trace += 1000;
                 seedexpander(ctx, rand_bytes, random_bytes_size);
                 j = 0;
             }

@@ -38,8 +38,9 @@ void PQCLEAN_HQCRMRS128_CLEAN_vect_set_random_fixed_weight_by_coordinates(int *t
     j = random_bytes_size;
     while (i < weight) {
         do {
+            if (trace != NULL) *trace += 1;
             if (j == random_bytes_size) {
-                if (trace != NULL) *trace += 1;
+                if (trace != NULL) *trace += 1000;
                 seedexpander(ctx, rand_bytes, random_bytes_size);
                 j = 0;
             }
