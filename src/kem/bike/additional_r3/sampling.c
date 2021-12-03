@@ -184,3 +184,19 @@ ret_t generate_error_vector(OUT int * trace, OUT pad_e_t *e, IN const seed_t *se
 
   return SUCCESS;
 }
+
+// New function by Alexander
+ret_t make_error_vector(OUT pad_e_t *e, IN const idx_t *wlist, IN const int t)
+{
+  // (e0, e1) hold bits 0..R_BITS-1 and R_BITS..2*R_BITS-1 of the error, resp.
+  secure_set_bits_port(&e->val[0], 0, wlist, t);
+  secure_set_bits_port(&e->val[1], R_BITS, wlist, t);
+
+  // Clean the padding of the elements
+  PE0_RAW(e)[R_BYTES - 1] &= LAST_R_BYTE_MASK;
+  PE1_RAW(e)[R_BYTES - 1] &= LAST_R_BYTE_MASK;
+  bike_memset(&PE0_RAW(e)[R_BYTES], 0, R_PADDED_BYTES - R_BYTES);
+  bike_memset(&PE1_RAW(e)[R_BYTES], 0, R_PADDED_BYTES - R_BYTES);
+
+  return SUCCESS;
+}

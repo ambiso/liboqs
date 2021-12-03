@@ -35,3 +35,5 @@ ret_t generate_sparse_rep(OUT pad_r_t *r,
                           IN OUT aes_ctr_prf_state_t *prf_state);
 
 ret_t generate_error_vector(OUT int * trace, OUT pad_e_t *e, IN const seed_t *seed);
+
+ret_t make_error_vector(OUT pad_e_t *e, IN const idx_t *wlist, IN const int t);

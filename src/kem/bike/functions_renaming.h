@@ -46,7 +46,7 @@
 #define keypair RENAME_FUNC_NAME(keypair)
 #define decaps RENAME_FUNC_NAME(decaps)
 #define encaps RENAME_FUNC_NAME(encaps)
-#define encaps_with_m RENAME_FUNC_NAME(encaps_with_m)
+#define encaps_with_m_e RENAME_FUNC_NAME(encaps_with_m_e)
 #define numrejections RENAME_FUNC_NAME(numrejections)
 
 #define aes_ctr_prf RENAME_FUNC_NAME(aes_ctr_prf)
@@ -127,6 +127,7 @@
 #define sample_uniform_r_bits RENAME_FUNC_NAME(sample_uniform_r_bits)
 #define generate_sparse_rep RENAME_FUNC_NAME(generate_sparse_rep)
 #define generate_error_vector RENAME_FUNC_NAME(generate_error_vector)
+#define make_error_vector RENAME_FUNC_NAME(make_error_vector)
 
 #define secure_set_bits_port RENAME_FUNC_NAME(secure_set_bits_port)
 #define is_new_port RENAME_FUNC_NAME(is_new_port)

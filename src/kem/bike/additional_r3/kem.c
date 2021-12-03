@@ -220,10 +220,12 @@ int encaps(OUT unsigned char *     ct,
 // Encapsulate - pk is the public key,
 //               ct is a key encapsulation message (ciphertext),
 //               ss is the shared secret.
-int encaps_with_m(OUT unsigned char *     ct,
-                  OUT unsigned char *     ss,
-                  IN const unsigned char *pk,
-                  IN const unsigned char *m)
+int encaps_with_m_e(OUT unsigned char *     ct,
+                    OUT unsigned char *     ss,
+                    IN const unsigned char *pk,
+                    IN const unsigned char *m,
+                    IN const uint32_t *wlist,
+                    IN const int t)
 {
   // Public values (they do not require cleanup on exit).
   pk_t l_pk;
@@ -237,7 +239,11 @@ int encaps_with_m(OUT unsigned char *     ct,
   bike_memcpy(&l_pk, pk, sizeof(l_pk));
 
   // e = H(m) = H(seed[0])
-  GUARD(function_h(&e, (m_t *)m));
+  if (wlist == NULL) {
+    GUARD(function_h(&e, (m_t *)m));
+  } else {
+    GUARD(make_error_vector(&e, wlist, t));
+  }
 
   // Calculate the ciphertext
   GUARD(encrypt(&l_ct, &e, &l_pk, (m_t *)m));
@@ -299,8 +305,8 @@ int decaps(OUT unsigned char *     ss,
 
   // Decode and on success check if |e|=T (all in constant-time)
   volatile uint32_t success_cond = (decode(&e, &l_ct, &l_sk) == SUCCESS);
-  success_cond &= secure_cmp32(T, r_bits_vector_weight(&e.val[0]) +
-                                    r_bits_vector_weight(&e.val[1]));
+  // success_cond &= secure_cmp32(T, r_bits_vector_weight(&e.val[0]) +      // Counter measure disabled by Alexander
+  //                                   r_bits_vector_weight(&e.val[1]));    // Counter measure disabled by Alexander
 
   // Set appropriate error based on the success condition
   uint8_t mask = ~secure_l32_mask(0, success_cond);

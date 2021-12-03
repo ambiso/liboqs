@@ -10,7 +10,8 @@
 #include "sampling_internal.h"
 #include "utilities.h"
 
-#define MAX_WLIST_SIZE (T > D ? T : D)
+// Size increased by Alexander
+#define MAX_WLIST_SIZE ((T > D ? T : D)*1)
 
 void secure_set_bits_port(OUT pad_r_t *   r,
                           IN const size_t first_pos,
