@@ -45,6 +45,7 @@
 
 #define keypair RENAME_FUNC_NAME(keypair)
 #define decaps RENAME_FUNC_NAME(decaps)
+#define decaps_intermediaries RENAME_FUNC_NAME(decaps_intermediaries)
 #define encaps RENAME_FUNC_NAME(encaps)
 #define encaps_with_m_e RENAME_FUNC_NAME(encaps_with_m_e)
 #define numrejections RENAME_FUNC_NAME(numrejections)

@@ -11,7 +11,7 @@
 #include "utilities.h"
 
 // Size increased by Alexander
-#define MAX_WLIST_SIZE ((T > D ? T : D)*1)
+#define MAX_WLIST_SIZE ((T > D ? T : D)*10)
 
 void secure_set_bits_port(OUT pad_r_t *   r,
                           IN const size_t first_pos,

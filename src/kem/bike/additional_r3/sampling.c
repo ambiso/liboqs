@@ -159,7 +159,6 @@ ret_t generate_sparse_rep(OUT pad_r_t *r,
 ret_t generate_error_vector(OUT int * trace, OUT pad_e_t *e, IN const seed_t *seed)
 {
   DEFER_CLEANUP(aes_ctr_prf_state_t prf_state = {0}, aes_ctr_prf_state_cleanup);
-  if (trace != NULL) *trace = 0;
 
   GUARD(init_aes_ctr_prf_state(&prf_state, MAX_AES_INVOKATION, seed));
 

@@ -26,12 +26,12 @@ _INLINE_ void convert_m_to_seed_type(OUT seed_t *seed, IN const m_t *m)
 }
 
 // (e0, e1) = H(m)
-_INLINE_ ret_t function_h(OUT pad_e_t *e, IN const m_t *m)
+_INLINE_ ret_t function_h(OUT int * trace, OUT pad_e_t *e, IN const m_t *m)
 {
   DEFER_CLEANUP(seed_t seed = {0}, seed_cleanup);
 
   convert_m_to_seed_type(&seed, m);
-  return generate_error_vector(NULL, e, &seed);
+  return generate_error_vector(trace, e, &seed);
 }
 
 // out = L(e)
@@ -200,7 +200,7 @@ int encaps(OUT unsigned char *     ct,
 
   // e = H(m) = H(seed[0])
   convert_seed_to_m_type(&m, &seeds.seed[0]);
-  GUARD(function_h(&e, &m));
+  GUARD(function_h(NULL, &e, &m));
 
   // Calculate the ciphertext
   GUARD(encrypt(&l_ct, &e, &l_pk, &m));
@@ -240,7 +240,7 @@ int encaps_with_m_e(OUT unsigned char *     ct,
 
   // e = H(m) = H(seed[0])
   if (wlist == NULL) {
-    GUARD(function_h(&e, (m_t *)m));
+    GUARD(function_h(NULL, &e, (m_t *)m));
   } else {
     GUARD(make_error_vector(&e, wlist, t));
   }
@@ -321,7 +321,77 @@ int decaps(OUT unsigned char *     ss,
 
   // Check if H(m') is equal to (e0', e1')
   // (in constant-time)
-  GUARD(function_h(&e_tmp, &m_prime));
+  GUARD(function_h(NULL, &e_tmp, &m_prime));
+  success_cond = secure_cmp(PE0_RAW(&e_prime), PE0_RAW(&e_tmp), R_BYTES);
+  success_cond &= secure_cmp(PE1_RAW(&e_prime), PE1_RAW(&e_tmp), R_BYTES);
+
+  // Compute either K(m', C) or K(sigma, C) based on the success condition
+  mask = secure_l32_mask(0, success_cond);
+  for(size_t i = 0; i < M_BYTES; i++) {
+    m_prime.raw[i] &= u8_barrier(~mask);
+    m_prime.raw[i] |= (u8_barrier(mask) & l_sk.sigma.raw[i]);
+  }
+
+  // Generate the shared secret
+  GUARD(function_k(&l_ss, &m_prime, &l_ct));
+
+  // Copy the data into the output buffer
+  bike_memcpy(ss, &l_ss, sizeof(l_ss));
+
+  return SUCCESS;
+}
+
+
+// Decapsulate - ct is a key encapsulation message (ciphertext),
+//               sk is the private key,
+//               ss is the shared secret
+int decaps_intermediaries(OUT int * rejections, 
+                          OUT unsigned char *     ss,
+                          IN const unsigned char *ct,
+                          IN const unsigned char *sk)
+{
+  // Public values, does not require a cleanup on exit
+  ct_t l_ct;
+
+  DEFER_CLEANUP(seeds_t seeds = {0}, seeds_cleanup);
+
+  DEFER_CLEANUP(ss_t l_ss, ss_cleanup);
+  DEFER_CLEANUP(aligned_sk_t l_sk, sk_cleanup);
+  DEFER_CLEANUP(e_t e, e_cleanup);
+  DEFER_CLEANUP(m_t m_prime, m_cleanup);
+  DEFER_CLEANUP(pad_e_t e_tmp, pad_e_cleanup);
+  DEFER_CLEANUP(pad_e_t e_prime, pad_e_cleanup);
+
+  // Copy the data from the input buffers. This is required in order to avoid
+  // alignment issues on non x86_64 processors.
+  bike_memcpy(&l_ct, ct, sizeof(l_ct));
+  bike_memcpy(&l_sk, sk, sizeof(l_sk));
+
+  // Generate a random error vector to be used in case of decoding failure
+  // (Note: possibly, a "fixed" zeroed error vector could suffice too,
+  // and serve this generation)
+  get_seeds(&seeds);
+  GUARD(generate_error_vector(NULL, &e_prime, &seeds.seed[0]));
+
+  // Decode and on success check if |e|=T (all in constant-time)
+  volatile uint32_t success_cond = (decode(&e, &l_ct, &l_sk) == SUCCESS);
+  // success_cond &= secure_cmp32(T, r_bits_vector_weight(&e.val[0]) +      // Counter measure disabled by Alexander
+  //                                   r_bits_vector_weight(&e.val[1]));    // Counter measure disabled by Alexander
+
+  // Set appropriate error based on the success condition
+  uint8_t mask = ~secure_l32_mask(0, success_cond);
+  for(size_t i = 0; i < R_BYTES; i++) {
+    PE0_RAW(&e_prime)[i] &= u8_barrier(~mask);
+    PE0_RAW(&e_prime)[i] |= (u8_barrier(mask) & E0_RAW(&e)[i]);
+    PE1_RAW(&e_prime)[i] &= u8_barrier(~mask);
+    PE1_RAW(&e_prime)[i] |= (u8_barrier(mask) & E1_RAW(&e)[i]);
+  }
+
+  GUARD(reencrypt(&m_prime, &e_prime, &l_ct));
+
+  // Check if H(m') is equal to (e0', e1')
+  // (in constant-time)
+  GUARD(function_h(rejections, &e_tmp, &m_prime));
   success_cond = secure_cmp(PE0_RAW(&e_prime), PE0_RAW(&e_tmp), R_BYTES);
   success_cond &= secure_cmp(PE1_RAW(&e_prime), PE1_RAW(&e_tmp), R_BYTES);
 
