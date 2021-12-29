@@ -23,7 +23,8 @@
 #include <string.h>
 
 _INLINE_ ret_t
-get_rand_mod_len(OUT uint32_t *    rand_pos,
+get_rand_mod_len(OUT int * trace,
+                 OUT uint32_t *    rand_pos,
                  IN const uint32_t len,
                  IN OUT aes_ctr_prf_state_t *prf_state)
 {
@@ -31,6 +32,9 @@ get_rand_mod_len(OUT uint32_t *    rand_pos,
 
   do
   {
+    if (trace) {
+      *trace += 1;
+    }
     // Generate 128bit of random numbers
     GUARD(aes_ctr_prf((uint8_t *)rand_pos, prf_state, sizeof(*rand_pos)));
 
@@ -100,7 +104,8 @@ is_new(IN const idx_t wlist[], IN const uint32_t ctr)
 //               bytes array. The padded area may be modified and should
 //               be ignored outside the function scope.
 ret_t
-generate_sparse_rep(OUT uint64_t *    a,
+generate_sparse_rep(OUT int * trace,
+                    OUT uint64_t *    a,
                     OUT idx_t         wlist[],
                     IN const uint32_t weight,
                     IN const uint32_t len,
@@ -116,7 +121,7 @@ generate_sparse_rep(OUT uint64_t *    a,
   // Generate weight rand numbers
   do
   {
-    GUARD(get_rand_mod_len(&wlist[ctr], len, prf_state));
+    GUARD(get_rand_mod_len(trace, &wlist[ctr], len, prf_state));
     ctr += is_new(wlist, ctr);
   } while(ctr < weight);
 
@@ -128,3 +133,20 @@ generate_sparse_rep(OUT uint64_t *    a,
 
   return SUCCESS;
 }
+
+// TODO
+// // New function by Alexander
+// ret_t make_error_vector(OUT pad_e_t *e, IN const idx_t *wlist, IN const int t)
+// {
+//   // (e0, e1) hold bits 0..R_BITS-1 and R_BITS..2*R_BITS-1 of the error, resp.
+//   secure_set_bits_port(&e->val[0], 0, wlist, t);
+//   secure_set_bits_port(&e->val[1], R_BITS, wlist, t);
+
+//   // Clean the padding of the elements
+//   PE0_RAW(e)[R_BYTES - 1] &= LAST_R_BYTE_MASK;
+//   PE1_RAW(e)[R_BYTES - 1] &= LAST_R_BYTE_MASK;
+//   bike_memset(&PE0_RAW(e)[R_BYTES], 0, R_PADDED_BYTES - R_BYTES);
+//   bike_memset(&PE1_RAW(e)[R_BYTES], 0, R_PADDED_BYTES - R_BYTES);
+
+//   return SUCCESS;
+// }

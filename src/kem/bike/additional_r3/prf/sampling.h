@@ -91,7 +91,8 @@ sample_uniform_r_bits(OUT r_t *r,
 // Using the pseudorandom ctx supplied
 // Outputs also a compressed (not ordered) list of indices
 ret_t
-generate_sparse_rep(OUT uint64_t *a,
+generate_sparse_rep(OUT int * trace,
+                    OUT uint64_t *    a,
                     OUT idx_t     wlist[],
                     IN uint32_t   weight,
                     IN uint32_t   len,
@@ -103,3 +104,8 @@ secure_set_bits(IN OUT uint64_t *a,
                 IN const idx_t   wlist[],
                 IN uint32_t      a_len,
                 IN uint32_t      weight);
+
+
+// New function by Alexander
+// TODO
+// ret_t make_error_vector(OUT pad_e_t *e, IN const idx_t *wlist, IN const int t);

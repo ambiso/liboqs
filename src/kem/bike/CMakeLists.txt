@@ -29,7 +29,16 @@ additional_r3/kem.c
 additional_r3/prf/aes.c
 additional_r3/prf/aes_ctr_prf.c
 additional_r3/prf/sampling.c
-additional_r3/prf/sampling_portable.c)
+additional_r3/prf/sampling_portable.c
+additional_r3/gf2x/gf_mul.S
+additional_r3/gf2x/red.S
+additional_r3/prf/sampling_avx2.S
+# additional_r3/prf/sampling_avx512.S
+additional_r3/prf/vaes256_key_expansion.S
+)
+
+SET(CMAKE_ASM_FLAGS "${CFLAGS} -x assembler-with-cpp")
+
 
     if (OQS_DIST_X86_64_BUILD OR OQS_USE_AVX2_INSTRUCTIONS)
         set(AVX2_SRCS additional_r3/decode/secure_decode_avx2.c)

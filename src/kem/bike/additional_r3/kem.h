@@ -28,13 +28,13 @@
 // Keygenerate - pk is the public key,
 //               sk is the private key,
 int
-crypto_kem_keypair(OUT unsigned char *pk, OUT unsigned char *sk);
+keypair(OUT unsigned char *pk, OUT unsigned char *sk);
 
 // Encapsulate - pk is the public key,
 //               ct is a key encapsulation message (ciphertext),
 //               ss is the shared secret.
 int
-crypto_kem_enc(OUT unsigned char *     ct,
+encaps(OUT unsigned char *     ct,
                OUT unsigned char *     ss,
                IN const unsigned char *pk);
 
@@ -42,6 +42,6 @@ crypto_kem_enc(OUT unsigned char *     ct,
 //               sk is the private key,
 //               ss is the shared secret
 int
-crypto_kem_dec(OUT unsigned char *     ss,
+decaps(OUT unsigned char *     ss,
                IN const unsigned char *ct,
                IN const unsigned char *sk);

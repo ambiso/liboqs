@@ -23,6 +23,7 @@
 #include "gf2x.h"
 #include "sampling.h"
 #include "sha.h"
+#include "types.h"
 
 _INLINE_ void
 split_e(OUT split_e_t *splitted_e, IN const e_t *e)
@@ -95,7 +96,7 @@ calc_pk(OUT pk_t *pk, IN const seed_t *g_seed, IN const pad_sk_t p_sk)
 // extract-then-expand paradigm, based on SHA384 and AES256-CTR PRNG, to produce e
 // from (m*f0, m*f1):
 _INLINE_ ret_t
-function_h(OUT split_e_t *splitted_e, IN const r_t *in0, IN const r_t *in1)
+function_h(OUT int * trace, OUT split_e_t *splitted_e, IN const r_t *in0, IN const r_t *in1)
 {
   DEFER_CLEANUP(generic_param_n_t tmp, generic_param_n_cleanup);
   DEFER_CLEANUP(sha_hash_t hash_seed = {0}, sha_hash_cleanup);
@@ -118,7 +119,7 @@ function_h(OUT split_e_t *splitted_e, IN const r_t *in0, IN const r_t *in1)
   DEFER_CLEANUP(padded_e_t e, padded_e_cleanup);
   DEFER_CLEANUP(compressed_idx_t_t dummy, compressed_idx_t_cleanup);
 
-  GUARD(generate_sparse_rep((uint64_t *)&e, dummy.val, T1, N_BITS, sizeof(e),
+  GUARD(generate_sparse_rep(trace, (uint64_t *)&e, dummy.val, T1, N_BITS, sizeof(e),
                             &prf_state));
   split_e(splitted_e, &e.val);
 
@@ -126,7 +127,7 @@ function_h(OUT split_e_t *splitted_e, IN const r_t *in0, IN const r_t *in1)
 }
 
 _INLINE_ ret_t
-encrypt(OUT ct_t *ct, OUT split_e_t *mf, IN const pk_t *pk, IN const seed_t *seed)
+encrypt(OUT int * trace, OUT ct_t *ct, OUT split_e_t *mf, IN const pk_t *pk, IN const seed_t *seed)
 {
   DEFER_CLEANUP(padded_r_t m = {0}, padded_r_cleanup);
 
@@ -154,7 +155,7 @@ encrypt(OUT ct_t *ct, OUT split_e_t *mf, IN const pk_t *pk, IN const seed_t *see
   DEFER_CLEANUP(split_e_t splitted_e, split_e_cleanup);
 
   DMSG("    Computing the hash function e <- H(m*f0, m*f1).\n");
-  GUARD(function_h(&splitted_e, &mf_int[0].val, &mf_int[1].val));
+  GUARD(function_h(trace, &splitted_e, &mf_int[0].val, &mf_int[1].val));
 
   DMSG("    Addding Error to the ciphertext.\n");
   GUARD(gf2x_add(p_ct[0].val.raw, mf_int[0].val.raw, splitted_e.val[0].raw,
@@ -179,7 +180,8 @@ encrypt(OUT ct_t *ct, OUT split_e_t *mf, IN const pk_t *pk, IN const seed_t *see
 }
 
 _INLINE_ ret_t
-reencrypt(OUT pad_ct_t ce,
+reencrypt(OUT int * trace,
+          OUT pad_ct_t ce,
           OUT split_e_t *e2,
           IN const split_e_t *e,
           IN const ct_t *l_ct)
@@ -189,7 +191,7 @@ reencrypt(OUT pad_ct_t ce,
   GUARD(gf2x_add(ce[1].val.raw, l_ct->val[1].raw, e->val[1].raw, R_SIZE));
 
   // (e0'', e1'') <-- H(c0 + e0', c1 + e1')
-  GUARD(function_h(e2, &ce[0].val, &ce[1].val));
+  GUARD(function_h(trace, e2, &ce[0].val, &ce[1].val));
 
   return SUCCESS;
 }
@@ -222,7 +224,7 @@ get_ss(OUT ss_t *out, IN const r_t *in0, IN const r_t *in1, IN const ct_t *ct)
 // The three APIs below (keypair, encapsulate, decapsulate) are defined by NIST:
 ////////////////////////////////////////////////////////////////////////////////
 int
-crypto_kem_keypair(OUT unsigned char *pk, OUT unsigned char *sk)
+keypair(OUT unsigned char *pk, OUT unsigned char *sk)
 {
   // Convert to this implementation types
   sk_t *l_sk = (sk_t *)sk;
@@ -241,7 +243,7 @@ crypto_kem_keypair(OUT unsigned char *pk, OUT unsigned char *sk)
   // Get the entropy seeds.
   get_seeds(&seeds);
 
-  DMSG("  Enter crypto_kem_keypair.\n");
+  DMSG("  Enter keypair.\n");
   DMSG("    Calculating the secret key.\n");
 
   // h0 and h1 use the same context
@@ -253,7 +255,7 @@ crypto_kem_keypair(OUT unsigned char *pk, OUT unsigned char *sk)
   // Make sure that the wlists are zeroed for the KATs.
   memset(l_sk, 0, sizeof(sk_t));
 
-  GUARD(generate_sparse_rep((uint64_t *)&p_sk[0], l_sk->wlist[0].val, DV, R_BITS,
+  GUARD(generate_sparse_rep(NULL, (uint64_t *)&p_sk[0], l_sk->wlist[0].val, DV, R_BITS,
                             sizeof(p_sk[0]), &h_prf_state));
 
   // Copy data
@@ -265,7 +267,7 @@ crypto_kem_keypair(OUT unsigned char *pk, OUT unsigned char *sk)
   GUARD(sample_uniform_r_bits_with_fixed_prf_context(&l_sk->sigma1, &s_prf_state,
                                                      NO_RESTRICTION));
 
-  GUARD(generate_sparse_rep((uint64_t *)&p_sk[1], l_sk->wlist[1].val, DV, R_BITS,
+  GUARD(generate_sparse_rep(NULL, (uint64_t *)&p_sk[1], l_sk->wlist[1].val, DV, R_BITS,
                             sizeof(p_sk[1]), &h_prf_state));
 
   // Copy data
@@ -282,7 +284,7 @@ crypto_kem_keypair(OUT unsigned char *pk, OUT unsigned char *sk)
   print("sigma0: ", (uint64_t *)l_sk->sigma0.raw, R_BITS);
   print("sigma1: ", (uint64_t *)l_sk->sigma1.raw, R_BITS);
 
-  DMSG("  Exit crypto_kem_keypair.\n");
+  DMSG("  Exit keypair.\n");
 
   return SUCCESS;
 }
@@ -291,11 +293,11 @@ crypto_kem_keypair(OUT unsigned char *pk, OUT unsigned char *sk)
 //               ct is a key encapsulation message (ciphertext),
 //               ss is the shared secret.
 int
-crypto_kem_enc(OUT unsigned char *     ct,
+encaps(OUT unsigned char *     ct,
                OUT unsigned char *     ss,
                IN const unsigned char *pk)
 {
-  DMSG("  Enter crypto_kem_enc.\n");
+  DMSG("  Enter encaps.\n");
 
   // Convert to the types that are used by this implementation
   const pk_t *l_pk = (const pk_t *)pk;
@@ -313,13 +315,13 @@ crypto_kem_enc(OUT unsigned char *     ct,
   // Here, we stay consistent with BIKE's reference code
   // that chooses the seconde seed.
   DEFER_CLEANUP(split_e_t mf, split_e_cleanup);
-  GUARD(encrypt(l_ct, &mf, l_pk, &seeds.seed[1]));
+  GUARD(encrypt(NULL, l_ct, &mf, l_pk, &seeds.seed[1]));
 
   DMSG("    Generating shared secret.\n");
   get_ss(l_ss, &mf.val[0], &mf.val[1], l_ct);
 
   print("ss: ", (uint64_t *)l_ss->raw, SIZEOF_BITS(*l_ss));
-  DMSG("  Exit crypto_kem_enc.\n");
+  DMSG("  Exit encaps.\n");
   return SUCCESS;
 }
 
@@ -327,11 +329,11 @@ crypto_kem_enc(OUT unsigned char *     ct,
 //               sk is the private key,
 //               ss is the shared secret
 int
-crypto_kem_dec(OUT unsigned char *     ss,
+decaps(OUT unsigned char *     ss,
                IN const unsigned char *ct,
                IN const unsigned char *sk)
 {
-  DMSG("  Enter crypto_kem_dec.\n");
+  DMSG("  Enter decaps.\n");
 
   // Convert to the types used by this implementation
   const sk_t *l_sk = (const sk_t *)sk;
@@ -350,7 +352,7 @@ crypto_kem_dec(OUT unsigned char *     ss,
 
   DEFER_CLEANUP(split_e_t e2, split_e_cleanup);
   DEFER_CLEANUP(pad_ct_t ce, pad_ct_cleanup);
-  GUARD(reencrypt(ce, &e2, &e, l_ct));
+  GUARD(reencrypt(NULL, ce, &e2, &e, l_ct));
 
   // Check if the decoding is successful.
   // Check if the error weight equals T1.
@@ -373,6 +375,190 @@ crypto_kem_dec(OUT unsigned char *     ss,
     l_ss->raw[i] = (mask & ss_succ.raw[i]) | (~mask & ss_fail.raw[i]);
   }
 
-  DMSG("  Exit crypto_kem_dec.\n");
+  DMSG("  Exit decaps.\n");
   return SUCCESS;
+}
+
+// Decapsulate - ct is a key encapsulation message (ciphertext),
+//               sk is the private key,
+//               ss is the shared secret
+int decaps_intermediaries(OUT int * trace, 
+                          OUT unsigned char *     ss,
+                          IN const unsigned char *ct,
+                          IN const unsigned char *sk)
+{
+  DMSG("  Enter decaps.\n");
+
+  // Convert to the types used by this implementation
+  const sk_t *l_sk = (const sk_t *)sk;
+  const ct_t *l_ct = (const ct_t *)ct;
+  ss_t *      l_ss = (ss_t *)ss;
+
+  // Force zero initialization.
+  DEFER_CLEANUP(syndrome_t syndrome = {0}, syndrome_cleanup);
+  DEFER_CLEANUP(split_e_t e, split_e_cleanup);
+
+  DMSG("  Computing s.\n");
+  GUARD(compute_syndrome(&syndrome, l_ct, l_sk));
+
+  DMSG("  Decoding.\n");
+  uint32_t dec_ret = decode(&e, &syndrome, l_ct, l_sk) != SUCCESS ? 0 : 1;
+
+  DEFER_CLEANUP(split_e_t e2, split_e_cleanup);
+  DEFER_CLEANUP(pad_ct_t ce, pad_ct_cleanup);
+  GUARD(reencrypt(trace, ce, &e2, &e, l_ct));
+
+  // Check if the decoding is successful.
+  // Check if the error weight equals T1.
+  // Check if (e0', e1') == (e0'', e1'').
+  volatile uint32_t success_cond;
+  success_cond = dec_ret;
+  success_cond &= secure_cmp32(T1, r_bits_vector_weight(&e.val[0]) +
+                                       r_bits_vector_weight(&e.val[1]));
+  success_cond &= secure_cmp((uint8_t *)&e, (uint8_t *)&e2, sizeof(e));
+
+  ss_t ss_succ = {0};
+  ss_t ss_fail = {0};
+
+  get_ss(&ss_succ, &ce[0].val, &ce[1].val, l_ct);
+  get_ss(&ss_fail, &l_sk->sigma0, &l_sk->sigma1, l_ct);
+
+  uint8_t mask = ~secure_l32_mask(0, success_cond);
+  for(uint32_t i = 0; i < sizeof(*l_ss); i++)
+  {
+    l_ss->raw[i] = (mask & ss_succ.raw[i]) | (~mask & ss_fail.raw[i]);
+  }
+
+  DMSG("  Exit decaps.\n");
+  return SUCCESS;
+}
+
+_INLINE_ ret_t
+encrypt_with_m_e(OUT int * trace, OUT ct_t *ct, OUT split_e_t *mf, IN const pk_t *pk, IN const seed_t *seed,
+                 IN const unsigned char *msg,
+                 IN const uint32_t *wlist,
+                 IN const int t)
+{
+  DEFER_CLEANUP(padded_r_t m = {0}, padded_r_cleanup);
+  memcpy(&m.val, msg, sizeof m.val);
+
+  DMSG("    Sampling m.\n");
+  GUARD(sample_uniform_r_bits(&m.val, seed, NO_RESTRICTION));
+
+  // Pad the public key
+  pad_pk_t p_pk = {0};
+  p_pk[0].val   = pk->val[0];
+  p_pk[1].val   = pk->val[1];
+
+  // Pad the ciphertext
+  pad_ct_t p_ct = {0};
+  p_ct[0].val   = ct->val[0];
+  p_ct[1].val   = ct->val[1];
+
+  DEFER_CLEANUP(dbl_pad_ct_t mf_int = {0}, dbl_pad_ct_cleanup);
+
+  DMSG("    Computing m*f0 and m*f1.\n");
+  GUARD(
+      gf2x_mod_mul((uint64_t *)&mf_int[0], (uint64_t *)&m, (uint64_t *)&p_pk[0]));
+  GUARD(
+      gf2x_mod_mul((uint64_t *)&mf_int[1], (uint64_t *)&m, (uint64_t *)&p_pk[1]));
+
+  DEFER_CLEANUP(split_e_t splitted_e, split_e_cleanup);
+
+  // e = H(m) = H(seed[0])
+  if (wlist == NULL) {
+    DMSG("    Computing the hash function e <- H(m*f0, m*f1).\n");
+    GUARD(function_h(NULL, &splitted_e, &mf_int[0].val, &mf_int[1].val));
+  } else {
+    // TODO!!
+    // GUARD(make_error_vector(&e, wlist, t));
+  }
+
+
+  DMSG("    Addding Error to the ciphertext.\n");
+  GUARD(gf2x_add(p_ct[0].val.raw, mf_int[0].val.raw, splitted_e.val[0].raw,
+                 R_SIZE));
+  GUARD(gf2x_add(p_ct[1].val.raw, mf_int[1].val.raw, splitted_e.val[1].raw,
+                 R_SIZE));
+
+  // Copy the data to the output parameters.
+  ct->val[0] = p_ct[0].val;
+  ct->val[1] = p_ct[1].val;
+
+  // Copy the internal mf to the output parameters.
+  mf->val[0] = mf_int[0].val;
+  mf->val[1] = mf_int[1].val;
+
+  print("e0: ", (uint64_t *)splitted_e.val[0].raw, R_BITS);
+  print("e1: ", (uint64_t *)splitted_e.val[1].raw, R_BITS);
+  print("c0: ", (uint64_t *)p_ct[0].val.raw, R_BITS);
+  print("c1: ", (uint64_t *)p_ct[1].val.raw, R_BITS);
+
+  return SUCCESS;
+}
+
+// Encapsulate - pk is the public key,
+//               ct is a key encapsulation message (ciphertext),
+//               ss is the shared secret.
+int encaps_with_m_e(OUT unsigned char *     ct,
+                    OUT unsigned char *     ss,
+                    IN const unsigned char *pk,
+                    IN const unsigned char *m,
+                    IN const uint32_t *wlist,
+                    IN const int t)
+{
+  DMSG("  Enter encaps.\n");
+
+  // Convert to the types that are used by this implementation
+  const pk_t *l_pk = (const pk_t *)pk;
+  ct_t *      l_ct = (ct_t *)ct;
+  ss_t *      l_ss = (ss_t *)ss;
+
+  // For NIST DRBG_CTR
+  DEFER_CLEANUP(seeds_t seeds = {0}, seeds_cleanup);
+
+  // Get the entropy seeds.
+  get_seeds(&seeds);
+
+  DMSG("    Encrypting.\n");
+  // In fact, seed[0] should be used.
+  // Here, we stay consistent with BIKE's reference code
+  // that chooses the seconde seed.
+  DEFER_CLEANUP(split_e_t mf, split_e_cleanup);
+
+  GUARD(encrypt_with_m_e(NULL, l_ct, &mf, l_pk, &seeds.seed[1], m, wlist, t));
+
+  DMSG("    Generating shared secret.\n");
+  get_ss(l_ss, &mf.val[0], &mf.val[1], l_ct);
+
+  print("ss: ", (uint64_t *)l_ss->raw, SIZEOF_BITS(*l_ss));
+  DMSG("  Exit encaps.\n");
+  return SUCCESS;
+}
+
+int numrejections(OUT int * trace, IN unsigned char * msg)
+{
+  DEFER_CLEANUP(generic_param_n_t tmp, generic_param_n_cleanup);
+  DEFER_CLEANUP(sha_hash_t hash_seed = {0}, sha_hash_cleanup);
+  DEFER_CLEANUP(seed_t seed_for_hash, seed_cleanup);
+  DEFER_CLEANUP(aes_ctr_prf_state_t prf_state = {0}, finalize_aes_ctr_prf);
+
+  // tmp.val[0] = *in0;
+  // tmp.val[1] = *in1;
+  memcpy(&tmp, msg, sizeof tmp);
+
+  // Hash (m*f0, m*f1) to generate a seed:
+  sha(&hash_seed, sizeof(tmp), (uint8_t *)&tmp);
+
+  // Format the seed as a 32-bytes input:
+  translate_hash_to_seed(&seed_for_hash, &hash_seed);
+
+  // Use the seed to generate a sparse error vector e:
+  GUARD(init_aes_ctr_prf_state(&prf_state, MAX_AES_INVOKATION, &seed_for_hash));
+
+  DEFER_CLEANUP(padded_e_t e, padded_e_cleanup);
+  DEFER_CLEANUP(compressed_idx_t_t dummy, compressed_idx_t_cleanup);
+
+  GUARD(generate_sparse_rep(trace, (uint64_t *)&e, dummy.val, T1, N_BITS, sizeof(e),
+                            &prf_state));
 }
